@@ -70,7 +70,7 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
 
 ---
 
-## 2026-09-23 · Phase 2: Knowledge · commit pending
+## 2026-09-23 · Phase 2: Knowledge · commit `c460fff`
 **Did**
 - Defined the `site-researcher` subagent (`.claude/agents/`): read-only, cadre.ai only,
   every fact needs an exact quote and URL.
@@ -112,3 +112,50 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
   current decisions, and log any changes in `plan.md` before building Phase 3.
 
 **Say in the review:** "I commissioned research on what makes website chatbots succeed and fail, and changed the design where the evidence said to."
+
+---
+
+## 2026-09-23 · Phase 3 prep: system prompt draft v1 · not committed yet
+**Did**
+- Drafted `prompts/system.md` (Brian owns it). Sections: identity and AI disclosure, the
+  job, the grounding rule, handoff triggers, off-topic, answer style, safety, router hint,
+  3 worked examples, and the knowledge inserted at runtime.
+
+**Decided**
+- **Handoff is a tag, not free text.** The model ends a reply with `[HANDOFF]` and the code
+  shows the form. The model never collects names or emails itself: that stays in a real
+  form with validation.
+- **The router's topic is a hint, not a command.** If Jev's label is wrong, the model
+  answers what was actually asked.
+- Pricing always hands off; portal login, certifications, and contracts do too.
+
+**Next**
+- Revise after the deep-research findings, then Brian approves the final wording.
+
+**Say in the review:** "The prompt has one rule above all: only say what's in the sourced knowledge. When the bot should hand off, it emits a tag and the code takes over, so the model never handles personal data."
+
+---
+
+## 2026-09-23 · Research received and applied to the design
+**Did**
+- Saved the deep-research report: `docs/research/website-ai-chatbot-research-2026.md`
+  (sources dated through Sep 2026, each with an evidence-strength label).
+- Wrote `docs/research/findings.md`: what it means for Cadence. 8 decisions confirmed and
+  17 numbered changes, each tied to its evidence and the file or phase it affects.
+- Linked the research from `CLAUDE.md` (read before UX, prompt, or eval work) and `plan.md`.
+
+**Found**
+- Our scope matches the report's "Lean" level for a professional-services site.
+- Its guidance that model confidence isn't calibrated correctness matches what we measured
+  with Jev in Phase 1.
+- New work: a labeled launcher, an answer contract, recover-once-then-hand-off, focus and
+  screen-reader handling, link allow-list, privacy line, prefilled handoff, idempotent lead
+  submit, graceful failure, severity-scored evals with a zero-critical gate.
+- 12 of the report's 30 test scenarios don't apply (no accounts, orders, bookings, or
+  localization). Marked N/A with reasons instead of padding the test set.
+
+**Decided (Brian approved)**
+- System prompt v2: an answer contract (answer → condition → source → next step),
+  recover-once-then-hand-off, a link allow-list, and no promised response times.
+
+**Say in the review:** "I didn't design from habit. I commissioned research, kept what it confirmed, changed 17 things it challenged, and each change is traceable to a source."

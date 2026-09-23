@@ -31,6 +31,12 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - `evals/cases.yaml`: **Brian owns the final list.** `evals/run.py` runs them.
 - `tests/`: unit tests. No network calls, ever. Mock OpenRouter, Jev, and Supabase.
 
+## Research (read before UX, prompt, handoff, or eval work)
+- `docs/research/findings.md`: what the 2026 chatbot research means for Cadence, as a
+  numbered list of changes (#1–#17) with evidence strength. Cite the # when implementing one.
+- `docs/research/website-ai-chatbot-research-2026.md`: the full report. `§` refs point here.
+- Don't contradict a finding without logging why in plan.md → Key decisions.
+
 ## Hard rules
 1. **No fact without a source.** Every line in `knowledge/` cites a cadre.ai URL or
    the brief. If you can't cite it, it doesn't go in.

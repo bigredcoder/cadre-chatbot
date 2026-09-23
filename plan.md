@@ -47,6 +47,16 @@ It doesn't guess.
 - *Full transcript storage:* privacy. Less personal data held, less risk.
 - *Multi-language, voice, history across visits, CRM sync, one-line embed for cadre.ai:* next.
 
+## 2a. Research basis
+Design choices from Phase 3 onward follow `docs/research/findings.md`, a summary of a
+deep-research report on website chatbots in 2026 (`docs/research/website-ai-chatbot-research-2026.md`).
+It confirmed 8 existing decisions and added 17 changes: a labeled launcher, an answer
+contract, recover-once-then-hand-off, accessible focus and announcements, safe link
+rendering, a privacy line, prefilled handoff, idempotent lead submit, graceful failure,
+and severity-based evals with a zero-critical launch gate.
+Cadence fits the report's "Lean" level: approved public content, few tasks, a human route,
+no autonomous actions.
+
 ## 3. Key decisions and trade-offs
 | Decision | Why | Trade-off accepted |
 |---|---|---|
@@ -58,6 +68,9 @@ It doesn't guess.
 | Never quote prices | Not published; wrong numbers cost trust | Some visitors want a number |
 | Named persona ("Cadence"), labeled as AI | Engagement plus honesty (AI disclosure) | No human face on the bot |
 | No transcripts stored | Privacy by default | Less data for tuning |
+| Measure qualified handoffs, not lead count | Research: form completions aren't the outcome (findings §Where) | Harder to measure in a demo |
+| Zero critical eval failures = launch gate | Research §8: never average a critical failure away | Stricter; may cut scope |
+| Links rendered only to an allow-list | OWASP 2026: output rendering is an attack surface (findings #7) | Bot can't link elsewhere |
 
 ## 4. Phases
 Each phase: build → verify → explain → approve → commit.
