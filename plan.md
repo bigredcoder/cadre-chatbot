@@ -23,8 +23,8 @@ turn the high-value ones into leads for a strategist.
 
 **Sources of truth:** cadre.ai (read 2026-09-23) and the take-home brief. Nothing else.
 
-**Known gaps in public info:** pricing, the names of the eight Maturity Index pillars,
-portal login steps, a data-security policy. The bot says it doesn't know and hands off.
+**Known gaps in public info:** pricing, whether the Maturity Index is free, portal login
+steps, security certifications and data hosting. The bot says it doesn't know and hands off.
 It doesn't guess.
 
 ## 2. Scope
@@ -64,7 +64,7 @@ Each phase: build → verify → explain → approve → commit.
 
 - [x] **0. Foundation:** repo, CLAUDE.md, this plan, .gitignore
 - [x] **1. Risk spikes + deploy early:** one Jev call from Python via AI Gateway; one OpenRouter call; "hello" page live on Vercel
-- [ ] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
+- [x] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
 - [ ] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [ ] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
 - [ ] **5. Handoff + data:** Supabase schema, `/api/leads`, validation, event logging
@@ -89,6 +89,14 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
 - OpenRouter (Brian's dev key): gemini-2.5-flash-lite and gpt-4.1-nano answered; gpt-5-nano returned blank (reasoning ate the token budget).
 - Live: https://cadre-chatbot-xi.vercel.app. `/api/health` returns ok.
 
+## 4b. Phase 2 findings (knowledge, 2026-09-23)
+- `knowledge/cadre.md`: 77 facts from 21 cadre.ai pages, each with an exact quote and URL.
+- `tools/verify_knowledge.py` string-matches every quote against the live page: 77/77 pass.
+- Research was split: the `site-researcher` subagent (read-only, `.claude/agents/`) covered
+  the services pages while I covered industries, case studies, and contact in parallel.
+- Deeper research closed gaps the first scan missed: the 8 pillar names (/strategy),
+  real security statements, plus support email, phone, and office address (/contact).
+
 ## 5. Model comparison
 *(filled in during Phase 6)*
 
@@ -105,6 +113,8 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | UI prototype | Unreadable form fields and faint text | Brian reviewed it | Fixed contrast, tested at desktop and phone size before resharing |
 | 09-23 | Jev routing design assumed one "needs a human?" question would work | Scores were fuzzy and inverted (pricing < construction) | Measured it in the Phase 1 spike before building | Topic-rule handoff + a sharper, criteria-defined Jev question |
 | 09-23 | First deploy "succeeded" | Vercel served only static files; the Python app never ran (/api/health 404) | Checked the health endpoint, not just "Ready" | Set `"framework": "fastapi"` in vercel.json; added a .vercelignore so secrets are never uploaded |
+| 09-23 | First site scan said the 8 pillar names and security statements weren't public | They're on /strategy; the scan only read the homepage | Subagent read every services page | Knowledge updated; gaps list corrected |
+| 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 7. What's next (with more time)

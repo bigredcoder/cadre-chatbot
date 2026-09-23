@@ -52,6 +52,10 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - Before any commit: `ruff check .` and `pytest -q` must pass.
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
 - When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
+- **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
+  append or update an entry: did / found / decided / checked / commit hash, plus a
+  one-line **"Say in the review"** talking point. Facts only, no marketing. Brian uses this
+  file to prepare the walkthrough, so never let it fall behind.
 
 ## Commands (always use the project venv: `.venv/bin/...`)
 - First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn`
