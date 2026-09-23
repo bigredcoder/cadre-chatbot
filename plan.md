@@ -85,7 +85,7 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
 - [x] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [x] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
-- [ ] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase `conversations` + `chat_events` with redaction and 30-day deletion
+- [x] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase `conversations` + `chat_events` with redaction and 30-day deletion
 - [ ] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
   - **Task (Brian, 09-23): justify the model choice with data.** Run the same eval set
     against every candidate answer model (not just 3 if more are viable) and record
@@ -143,6 +143,21 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
 | 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
+
+## 6a. Documentation tasks (for the review)
+- **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the
+  10 topic definitions (`config.TOPICS`) and how Jev picks one, the "asks for a person"
+  question and its true/false criteria, the confidence threshold and why it's 0.6, the
+  model fallback path, how the topic feeds the answer prompt, the off-topic short-circuit,
+  auth via Vercel OIDC, and the Phase 1 / Phase 4 measurements. Target:
+  `docs/jev-routing.md` plus a diagram. Not started.
+
+- **Benchmark with vs. without Jev (Brian, 09-23):** run the same eval set two ways,
+  (a) Jev routing + rules and (b) chat-model-only routing (the fallback path, forced on),
+  and compare topic accuracy, handoff accuracy, latency (median and slow tail), cost per
+  conversation, and off-topic/injection handling. It answers "was Jev worth adding?" with
+  data. Easy to run: `route()` already has both paths; add a flag to force the fallback.
+  Do it in Phase 6 alongside the model comparison. Not started.
 
 ## 7. What's next (with more time)
 *(filled in as we go)*

@@ -66,6 +66,17 @@ HANDOFF_TOPICS = {"pricing", "booking"}
 # --- Handoff ---
 HANDOFF_TAG = "[HANDOFF]"    # the model ends a reply with this; the code shows the form
 
+# --- Conversation storage (Supabase project "cadre-chatbot") ---
+# The publishable key is public by design (like any website's analytics key). The table's
+# row-level security lets it INSERT only: it can't read, change, or delete anything.
+# Review conversations in the Supabase dashboard, never through the app.
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://juvxbhiwpdbxfxgtaxcg.supabase.co")
+SUPABASE_PUBLISHABLE_KEY = os.environ.get(
+    "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_ZvU8JpnOjhQqb6IlLiGlZw_6KF0nQvs"
+)
+SAVE_TIMEOUT_S = 3            # saving must never slow the visitor down
+RETENTION_DAYS = 30           # enforced by a nightly pg_cron job in the database
+
 # --- Links the UI may render (research findings #7) ---
 ALLOWED_LINK_HOSTS = ("cadre.ai", "www.cadre.ai", "portal.gocadre.ai")
 CONTACT_EMAIL = "hello@gocadre.ai"

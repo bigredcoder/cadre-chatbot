@@ -9,11 +9,20 @@ from app.router import Route
 client = TestClient(main.app)
 
 
+SAVED = []
+
+
 @pytest.fixture(autouse=True)
-def fake_router(monkeypatch):
+def fake_router_and_storage(monkeypatch):
     async def fake(history, token=None):
         return Route("services", 0.95, "jev", False, False)
+
+    async def fake_save(row):
+        SAVED.append(row)
+        return True
+    SAVED.clear()
     monkeypatch.setattr(main, "route", fake)
+    monkeypatch.setattr(main, "save_turn", fake_save)
 
 
 def _post(messages):
@@ -71,3 +80,50 @@ def test_rule_handoff_overrides_model(monkeypatch):
     monkeypatch.setattr(main, "stream_answer", fake)
     body = _post([{"role": "user", "content": "price?"}]).text
     assert '"handoff": true' in body and '"model_handoff": false' in body
+
+
+def test_each_turn_is_saved_once_with_outcome(monkeypatch):
+    async def fake(history, topic):
+        yield {"type": "token", "text": "Yes."}
+        yield {"type": "done", "handoff": False, "model": "m", "latency_ms": 5}
+    monkeypatch.setattr(main, "stream_answer", fake)
+    _post([{"role": "user", "content": "Do you work with hotels?"}])
+    assert len(SAVED) == 1
+    row = SAVED[0]
+    assert row["outcome"] == "answered" and row["assistant_message"] == "Yes."
+    assert row["topic"] == "services" and row["router"] == "jev"
+
+
+def test_failed_answer_is_saved_as_error(monkeypatch):
+    async def broken(history, topic):
+        raise AnswerError("boom")
+        yield
+    monkeypatch.setattr(main, "stream_answer", broken)
+    _post([{"role": "user", "content": "hi"}])
+    assert SAVED[0]["outcome"] == "error"
+
+
+LEAD = {"name": "Brian Robison", "email": "brian@example.com", "subject": "Pricing question",
+        "message": "How much is the intensive?", "idempotency_key": "key-00000001"}
+
+
+def test_lead_form_is_honest_demo_confirmation():
+    body = client.post("/api/leads", json=LEAD).json()
+    assert body["ok"] and "demo" in body["message"] and "nothing was sent" in body["message"]
+    assert body["message"].startswith("Thanks, Brian.")
+
+
+def test_lead_double_submit_is_flagged_duplicate():
+    lead = {**LEAD, "idempotency_key": "key-00000002"}
+    assert client.post("/api/leads", json=lead).json()["duplicate"] is False
+    assert client.post("/api/leads", json=lead).json()["duplicate"] is True
+
+
+def test_lead_bad_email_is_rejected_with_field():
+    body = client.post("/api/leads", json={**LEAD, "email": "not-an-email",
+                                           "idempotency_key": "key-00000003"}).json()
+    assert body == {"ok": False, "field": "email", "message": "Enter a valid email address."}
+
+
+def test_lead_missing_field_is_422():
+    assert client.post("/api/leads", json={**LEAD, "name": ""}).status_code == 422

@@ -13,7 +13,7 @@ it can't or shouldn't answer. The live app is a chat bubble on a demo page.
 - Python 3.12+, FastAPI, deployed on Vercel (Python runtime, SSE streaming)
 - Plain HTML + vanilla JS for the UI (`public/index.html`). No frontend framework.
 - OpenRouter for answer generation; Jev via Vercel AI Gateway for routing
-- Supabase Postgres for `leads` and `chat_events`
+- Supabase Postgres: one table, `chat_turns` (redacted, 30-day retention, insert-only key)
 - pytest for unit tests; `evals/` for answer-quality tests
 
 Don't add a framework, ORM, vector DB, or new dependency without asking. Small and
@@ -24,7 +24,8 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - `app/config.py`: every model name, threshold, and limit. No magic numbers elsewhere.
 - `app/router.py`: Jev routing plus the fallback to the chat model
 - `app/answer.py`: builds the prompt, calls OpenRouter, streams
-- `app/leads.py`, `app/events.py`: database writes
+- `app/transcripts.py`: redacts, then saves one row per turn to Supabase `chat_turns`
+  (insert-only key; schema in `db/schema.sql`). `/api/leads` in main.py is a DEMO form.
 - `app/guards.py`: size, rate, and turn limits
 - `prompts/system.md`: Cadence's instructions. **Brian owns this file. Propose edits, don't rewrite it.**
 - `knowledge/cadre.md`: the ONLY source of facts about Cadre

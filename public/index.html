@@ -46,6 +46,12 @@
   .bts { border:1px dashed var(--line); border-radius:10px; padding:6px 9px; font:12px ui-monospace,Menlo,monospace; color:var(--sub); text-align:left; }
   .handoff { border:1px solid #e5e2da; background:#fff; border-radius:14px; padding:12px; text-align:left; }
   .handoff strong { font-family:'Inter Tight',Arial,sans-serif; }
+  .handoff label { display:block; font-size:12px; color:var(--sub); margin:8px 0 3px; }
+  .handoff input, .handoff textarea { width:100%; font:14px Inter,Arial,sans-serif; color:#222; border:1px solid var(--field); border-radius:10px; padding:8px 10px; }
+  .handoff textarea { min-height:70px; resize:vertical; }
+  .handoff .err { color:var(--red-ink); font-size:13px; margin:6px 0 0; }
+  .handoff .submit { margin-top:10px; background:var(--ink); color:#fff; border:none; border-radius:36px; padding:8px 14px; font:500 13px Inter,Arial,sans-serif; cursor:pointer; }
+  .handoff .submit[disabled] { opacity:.6; cursor:wait; }
   .pf { padding:10px 14px; border-top:1px solid #eee; }
   form.ask { display:flex; gap:6px; }
   form.ask label { position:absolute; left:-999px; }
@@ -108,7 +114,10 @@
   const STARTERS = ["What does Cadre do?", "Do you work with my industry?",
                     "What is the AI Maturity Index?", "How do I book a call?",
                     "How do you handle data security?"];
-  let history = [], busy = false, showBts = false;
+  let history = [], busy = false, showBts = false, lastTopic = "";
+  const SUBJECTS = { pricing:"Pricing question", booking:"Talk to an AI strategist", portal:"Client portal help",
+    maturity_index:"AI Maturity Index", llm_security:"Data security question", industries:"Industry fit",
+    services:"Services question", results:"Case studies", company:"About Cadre" };
   let session = crypto.randomUUID();
 
   // --- Safe rendering: text only, links only to Cadre's own sites ---
@@ -154,11 +163,45 @@
     log.appendChild(w);
   }
 
+  // Handoff form: same fields as cadre.ai/contact, prefilled so nobody retypes
+  // (research findings #9). Demo only: the server sends and stores nothing, and says so.
   function showHandoff() {
-    // Phase 5 replaces this with the lead form (prefilled question, idempotent submit)
-    const d = document.createElement("div"); d.className = "handoff";
-    d.innerHTML = `<strong>Talk to an AI Strategist</strong><br>A real person from the Cadre team can help. Email <a href="mailto:hello@gocadre.ai">hello@gocadre.ai</a> or use <a href="https://cadre.ai/contact" target="_blank" rel="noopener">cadre.ai/contact</a>.`;
+    const lastQ = [...history].reverse().find((m) => m.role === "user")?.content || "";
+    const id = "f" + Math.random().toString(36).slice(2, 8);
+    const key = crypto.randomUUID();  // one key per form: double-clicks can't duplicate (findings #10)
+    const d = document.createElement("form"); d.className = "handoff"; d.noValidate = true;
+    d.setAttribute("aria-labelledby", id + "t");
+    d.innerHTML = `<strong id="${id}t">Talk to an AI Strategist</strong>
+      <div style="font-size:13px;color:var(--sub)">A real person from the Cadre team follows up by email.</div>
+      <label for="${id}n">Name</label><input id="${id}n" name="name" autocomplete="name" required>
+      <label for="${id}e">Email</label><input id="${id}e" name="email" type="email" autocomplete="email" required>
+      <label for="${id}s">Subject</label><input id="${id}s" name="subject" required>
+      <label for="${id}m">Message</label><textarea id="${id}m" name="message" required></textarea>
+      <p class="err" role="alert" hidden></p>
+      <button class="submit" type="submit">Send to the team</button>`;
+    d.querySelector(`#${id}s`).value = SUBJECTS[lastTopic] || "Talk to an AI strategist";
+    d.querySelector(`#${id}m`).value = lastQ;
+    const err = d.querySelector(".err"), btn = d.querySelector(".submit");
+    d.oninput = () => (err.hidden = true);
+    d.onsubmit = async (e) => {
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(d));
+      const missing = ["name", "email", "subject", "message"].find((k) => !String(f[k] || "").trim());
+      if (missing) { err.textContent = `Enter your ${missing} first.`; err.hidden = false; d.querySelector(`[name=${missing}]`).focus(); return; }
+      btn.disabled = true; btn.textContent = "Sending…";
+      try {
+        const r = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, idempotency_key: key }) });
+        const data = await r.json();
+        if (!r.ok || !data.ok) throw new Error(data.message || "Check the form and try again.");
+        d.replaceWith(Object.assign(document.createElement("div"), { className: "msg", textContent: data.message }));
+        announce(data.message);
+      } catch (ex) {
+        err.textContent = ex.message.startsWith("Enter") ? ex.message : "That didn't go through. You can email hello@gocadre.ai instead.";
+        err.hidden = false; btn.disabled = false; btn.textContent = "Send to the team";
+      }
+    };
     log.appendChild(d); log.scrollTop = log.scrollHeight;
+    d.querySelector(`#${id}n`).focus();
   }
 
   async function ask(text) {
@@ -185,7 +228,7 @@
           const ev = (block.match(/^event: (.*)$/m) || [])[1];
           const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
           if (ev === "token") { answer += data.text; bubble.innerHTML = render(answer); log.scrollTop = log.scrollHeight; }
-          else if (ev === "route") route = data;
+          else if (ev === "route") { route = data; lastTopic = data.topic || ""; }
           else if (ev === "done") meta = data;
           else if (ev === "error") { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(data.message); }
         }
@@ -203,7 +246,8 @@
     } else {
       announce(bubble.textContent);
     }
-    busy = false; q.focus();
+    busy = false;
+    if (!document.querySelector("form.handoff:last-child")) q.focus();  // the form keeps focus
   }
 
   function open() { panel.hidden = false; launcher.setAttribute("aria-expanded", "true"); if (!log.children.length) welcome(); q.focus(); }
@@ -214,7 +258,7 @@
   panel.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
   $("restart").onclick = () => { history = []; session = crypto.randomUUID(); welcome(); q.focus(); };
   $("ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
-  $("human").onclick = () => { add("user", "Talk to a strategist"); showHandoff(); };
+  $("human").onclick = () => { add("user", "Talk to a strategist"); lastTopic = lastTopic || "booking"; showHandoff(); };
   $("bts").onchange = (e) => { showBts = e.target.checked; document.querySelectorAll(".bts").forEach((n) => (n.hidden = !showBts)); };
 })();
 </script>
