@@ -31,10 +31,14 @@ It doesn't guess.
 **In**
 1. Answers the brief's six scenarios plus pricing, grounded only in `knowledge/`
 2. Jev routing (topic + needs-a-human, with confidence) and a model fallback
-3. Human handoff: inline form → `leads` table, plus the /contact link
+3. Human handoff: an inline form mirroring cadre.ai/contact (Name, Email, Subject, Message),
+   prefilled and validated server-side. Demo only: nothing is sent or stored, and the
+   confirmation says so honestly.
 4. Guardrails: on-topic only, no invented facts or prices, resists prompt injection
 5. Chat bubble UI in Cadre's style, streaming answers, starter questions, "Behind the scenes" toggle
-6. One event row per turn (topic, confidence, router, model, latency, tokens, cost, outcome)
+6. Conversations saved for quality review: emails and phone numbers redacted, deleted
+   after 30 days, disclosed on /privacy. Plus one event row per turn (topic, confidence,
+   router, model, latency, tokens, cost, outcome).
 7. Unit tests + ~20-case answer-quality test set, one command each
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
@@ -44,7 +48,7 @@ It doesn't guess.
 - *Vector DB / retrieval:* the knowledge fits in the prompt. At this size, retrieval
   adds moving parts and can miss facts. Add it when the content outgrows the prompt.
 - *Admin dashboard:* the event table is the data layer; a dashboard is next.
-- *Full transcript storage:* privacy. Less personal data held, less risk.
+- *Storing handoff form submissions:* it's a demo. No lead data is kept.
 - *Multi-language, voice, history across visits, CRM sync, one-line embed for cadre.ai:* next.
 
 ## 2a. Research basis
@@ -67,7 +71,8 @@ no autonomous actions.
 | Capture leads on handoff | The bot's job is to free up strategists | Needs a database and validation |
 | Never quote prices | Not published; wrong numbers cost trust | Some visitors want a number |
 | Named persona ("Cadence"), labeled as AI | Engagement plus honesty (AI disclosure) | No human face on the bot |
-| No transcripts stored | Privacy by default | Less data for tuning |
+| ~~No transcripts stored~~ → **Transcripts kept, redacted, 30-day deletion** | Changed 09-23: research recommends routine transcript sampling (findings, §9 Lean level); you can't improve what you can't review | Holds some personal data briefly; mitigated by redaction, retention, disclosure |
+| Dummy handoff form, honest confirmation | Brian's call: mirrors cadre.ai/contact without sending anything; the research warns against claiming a send that didn't happen | No real lead capture in the demo |
 | Measure qualified handoffs, not lead count | Research: form completions aren't the outcome (findings §Where) | Harder to measure in a demo |
 | Zero critical eval failures = launch gate | Research §8: never average a critical failure away | Stricter; may cut scope |
 | Links rendered only to an allow-list | OWASP 2026: output rendering is an attack surface (findings #7) | Bot can't link elsewhere |
@@ -79,9 +84,15 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **1. Risk spikes + deploy early:** one Jev call from Python via AI Gateway; one OpenRouter call; "hello" page live on Vercel
 - [x] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
 - [x] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
-- [ ] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
-- [ ] **5. Handoff + data:** Supabase schema, `/api/leads`, validation, event logging
+- [x] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
+- [ ] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase `conversations` + `chat_events` with redaction and 30-day deletion
 - [ ] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
+  - **Task (Brian, 09-23): justify the model choice with data.** Run the same eval set
+    against every candidate answer model (not just 3 if more are viable) and record
+    quality, invented facts, handoff accuracy, latency, and cost per conversation in §5.
+    Write a short "Why this model" paragraph: why the winner, why not the runners-up.
+    Also explain why Jev for routing (Phase 1 + Phase 4 measurements) vs. using the chat
+    model for routing too. The current `google/gemini-2.5-flash-lite` is **provisional**.
 - [ ] **7. Harden + ship:** guards, reviewer pass, README, what's next, submit
 
 ## 4a. Phase 1 findings (Jev spike, 2026-09-23)
@@ -111,7 +122,9 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
   real security statements, plus support email, phone, and office address (/contact).
 
 ## 5. Model comparison
-*(filled in during Phase 6)*
+*(filled in during Phase 6: see the task under Phase 6)*
+
+**Why this model:** *(to write after the comparison)*
 
 | Model | Eval pass rate | Invented facts | p50 latency | Cost / conversation |
 |---|---|---|---|---|

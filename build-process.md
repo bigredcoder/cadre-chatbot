@@ -162,7 +162,7 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
 
 ---
 
-## 2026-09-23 · Phase 3: Answering, live chat UI · commit pending
+## 2026-09-23 · Phase 3: Answering, live chat UI · commit `3104a37`
 **Did**
 - `app/config.py`: every model name, limit, and threshold in one place. Provisional answer
   model `google/gemini-2.5-flash-lite` (Phase 6 picks the real one from evals).
@@ -191,3 +191,82 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
   handoff (card shown, no tag leak), links on the allow-list only.
 
 **Say in the review:** "The first live test caught the model copying my prompt example instead of the sourced facts. That's why every example now uses only knowledge-file facts, and why I test answers against the source, not just 'does it sound right.'"
+
+---
+
+## 2026-09-23 · Phase 3 live on Vercel
+**Did**
+- Brian added his dev OpenRouter key to Vercel (Production). Redeployed.
+- `/api/health` confirms the key is present without revealing it.
+
+**Checked**
+- A live question on https://cadre-chatbot-xi.vercel.app answered in ~1 s for ~$0.0004.
+- Confirmed the charge landed on the **dev key** (its usage rose by the same amount), not Cadre's.
+
+**Found (for Phases 4 and 6)**
+- **Over-eager handoff:** a normal Maturity Index question came back with `handoff: true`
+  because the model offered a call and added the tag. The form shouldn't appear unless it's
+  needed. → Phase 4 moves the handoff decision to routing rules, and the model's tag
+  becomes one signal among several.
+- **Missed the direct link:** the answer said "visit the link on Cadre's website" instead
+  of giving portal.gocadre.ai/ai-maturity-index, which is in the knowledge. → An eval case
+  in Phase 6: "how do I get scored" must include the portal URL.
+
+**Say in the review:** "The first live answers were grounded but not perfect: the bot handed off too eagerly and skipped a link it had. I logged both as test cases instead of eyeballing them away."
+
+---
+
+## 2026-09-23 · Decision changed: keep conversations; handoff form is a demo
+**Decided**
+- **Handoff form (Brian's idea):** mirrors cadre.ai/contact (Name, Email, Subject,
+  Message), prefilled from the conversation, validated server-side. It's a demo, so
+  nothing is sent, and the confirmation says exactly that instead of pretending.
+- **Conversations are now saved,** reversing the earlier "no transcripts" call. The
+  research recommends routine transcript sampling, even at the smallest level; a bot
+  you can't review can't improve. Safeguards: emails and phone numbers redacted before
+  saving, 30-day deletion, disclosed on /privacy.
+- Supabase stays, for `conversations` and `chat_events` only. No lead data is stored.
+
+**Say in the review:** "I started with 'store nothing' for privacy, then the research showed you can't improve what you can't review. So I store conversations redacted, for 30 days, and disclosed. I changed the decision because of evidence, and I logged why."
+
+---
+
+## 2026-09-23 · Phase 4: Jev routing + fallback · commit pending
+**Did**
+- `app/router.py`: Jev classifies each message into 10 topics and answers one sharp,
+  criteria-defined question: "is the visitor explicitly asking for a person?"
+- Fallback: if Jev's topic confidence is under 0.6 (ESTIMATE, tuned in Phase 6) or Jev is
+  unreachable, the chat model classifies instead. If both fail, a neutral default is used
+  and the answer still runs. The router never throws.
+- Handoff is a **rule**: the topic is pricing or booking, or the visitor asked for a person.
+  The model's own `[HANDOFF]` tag still counts, and both are reported separately.
+- Confident off-topic (≥0.9) gets a canned reply with **no model call**: cheaper, and
+  prompt-injection attempts never reach the answer model.
+- On Vercel, Jev authenticates with the per-request OIDC token; locally, with `.env.local`.
+  No new keys.
+- 10 new unit tests (26 total): confident / unsure / down / no credential, handoff rules,
+  canned off-topic, rule overriding the model.
+
+**Found**
+- 8 real messages: all routed correctly at 0.96–1.00. The sharper "asks for a person"
+  question fired only on "Can I talk to someone?", unlike the vague Phase 1 version.
+- The live-site over-eager handoff ("What is the AI Maturity Index…") now routes to
+  `maturity_index` with **no handoff**.
+
+**Prompt v3 (Brian approved):** gives the scoring link portal.gocadre.ai/ai-maturity-index;
+"offering a strategist as a next step is NOT a handoff". Retested: scoring answer includes
+the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands off.
+
+**Say in the review:** "Jev decides the topic, rules decide the handoff, and if Jev is unsure or down, the chat model steps in. The demo can't break because a week-old service did."
+
+---
+
+## 2026-09-23 · Open task: justify the model choice with data
+- Brian: we must be able to explain **why** we use the answer model we use. Run the eval
+  set against all viable candidate models, compare quality / invented facts / handoff
+  accuracy / latency / cost, and write a "Why this model" paragraph. Also explain why Jev
+  handles routing. Scheduled in Phase 6; tracked in `plan.md` §4 and §5.
+- Current model `google/gemini-2.5-flash-lite` is provisional: it was only the cheapest
+  model that answered correctly in the Phase 1 spike.
+
+**Say in the review:** "I didn't pick the model by brand. I ran the same test set against every candidate and picked on accuracy first, then speed and cost."

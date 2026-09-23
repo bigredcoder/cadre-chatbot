@@ -47,7 +47,9 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
    read `.env` values into your context. Use `.env.example` for names.
 5. **Cadre's OpenRouter key is off-limits** until Brian explicitly approves the final
    swap. All development uses Brian's own key.
-6. **No full chat transcripts stored.** `chat_events` holds labels and numbers only.
+6. **Transcripts are stored only redacted** (emails and phone numbers removed before
+   saving), deleted after 30 days, and disclosed on /privacy. Handoff form submissions
+   are never stored (demo).
 7. **Empty model replies are errors.** Some reasoning models return blank text when
    they run out of tokens (seen 2026-09-23 with gpt-5-nano). Never show a blank bubble.
 8. Every behavior change ships with a unit test or an eval case.

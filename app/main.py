@@ -2,12 +2,13 @@
 import json
 from typing import Literal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app import config
 from app.answer import AnswerError, stream_answer
+from app.router import route
 
 app = FastAPI(title="Cadence", docs_url=None, redoc_url=None)
 
@@ -27,6 +28,11 @@ def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
+OFF_TOPIC_REPLY = (
+    "I can only help with questions about Cadre AI. For example, I can explain Cadre's "
+    "services, the AI Maturity Index, or connect you with a strategist."
+)
+
 FALLBACK = (
     "Sorry, I couldn't answer that just now. You can reach the Cadre team at "
     f"{config.CONTACT_EMAIL} or cadre.ai/contact."
@@ -34,9 +40,10 @@ FALLBACK = (
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest) -> StreamingResponse:
+async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
     history = [m.model_dump() for m in req.messages]
     latest = history[-1]
+    oidc = request.headers.get("x-vercel-oidc-token")  # Vercel's per-request identity
 
     async def events():
         if latest["role"] != "user" or len(latest["content"]) > config.MAX_MESSAGE_CHARS:
@@ -46,11 +53,23 @@ async def chat(req: ChatRequest) -> StreamingResponse:
             yield sse("token", {"text": "We've covered a lot. A strategist can take it from here."})
             yield sse("done", {"handoff": True, "reason": "turn_limit"})
             return
-        topic = "unknown"  # Phase 4 replaces this with Jev routing
-        yield sse("route", {"topic": topic, "router": "none"})
+        decision = await route(history, oidc)
+        yield sse("route", decision.as_dict())
+        confident_off_topic = (
+            decision.topic == "off_topic" and decision.router == "jev"
+            and (decision.confidence or 0) >= config.OFF_TOPIC_CANNED_CONFIDENCE
+        )
+        if confident_off_topic and not decision.handoff:
+            # No model call: cheaper, and prompt-injection attempts never reach the model
+            yield sse("token", {"text": OFF_TOPIC_REPLY})
+            yield sse("done", {"handoff": False, "model": "none (canned reply)"})
+            return
         try:
-            async for item in stream_answer(history, topic):
+            async for item in stream_answer(history, decision.topic):
                 kind = item.pop("type")
+                if kind == "done":
+                    item["model_handoff"] = item["handoff"]
+                    item["handoff"] = decision.handoff or item["handoff"]
                 yield sse(kind, item)
         except AnswerError:
             # Never show a blank bubble or a stack trace (research findings #11)

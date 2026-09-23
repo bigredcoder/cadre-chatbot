@@ -6,16 +6,18 @@ ROOT = Path(__file__).resolve().parent.parent  # Vercel runs from the project ro
 
 
 def _load_dotenv() -> None:
-    """Local dev only: read .env into the environment without overriding real env vars.
-    On Vercel, keys come from the project's environment settings instead."""
-    path = ROOT / ".env"
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        if "=" in line and not line.lstrip().startswith("#"):
-            key, value = line.split("=", 1)
-            if value.strip():
-                os.environ.setdefault(key.strip(), value.strip().strip('"'))
+    """Local dev only: read .env and .env.local into the environment without overriding
+    real env vars. On Vercel, keys come from the project's environment settings instead.
+    (.env.local holds the short-lived VERCEL_OIDC_TOKEN from `vercel link`.)"""
+    for name in (".env", ".env.local"):
+        path = ROOT / name
+        if not path.exists():
+            continue
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                key, value = line.split("=", 1)
+                if value.strip():
+                    os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
 _load_dotenv()
@@ -34,6 +36,33 @@ MAX_MESSAGE_CHARS = 1000     # a single visitor message
 MAX_HISTORY_MESSAGES = 8     # only the recent turns are sent to the model
 MAX_TURNS_PER_SESSION = 30   # beyond this, point them to a person
 
+# --- Routing (Jev via Vercel AI Gateway) ---
+JEV_URL = "https://ai-gateway.vercel.sh/v1/evaluate"
+JEV_MODEL = "typesafe-ai/jev"
+JEV_TIMEOUT_S = 6
+# Below this, Jev's topic isn't trusted and the chat model classifies instead.
+# ESTIMATE: 0.6 is a starting point; Phase 6 evals tune it (research findings: validate
+# confidence against labeled outcomes before trusting it as a threshold).
+ROUTE_MIN_CONFIDENCE = 0.6
+HUMAN_REQUEST_THRESHOLD = 0.7    # Jev's "explicitly asking for a person?" probability
+OFF_TOPIC_CANNED_CONFIDENCE = 0.9  # this sure it's off-topic → canned reply, no model call
+
+TOPICS = {  # key: description Jev uses to decide
+    "services": "what Cadre does, its services, how an engagement works",
+    "industries": "whether Cadre works with a specific industry or type of company",
+    "booking": "booking a call, contacting Cadre, or talking to a strategist",
+    "portal": "the Cadre client portal, logging in, accounts",
+    "maturity_index": "the AI Maturity Index, pillars, or getting scored",
+    "llm_security": "which AI models Cadre uses, data security, privacy, compliance",
+    "pricing": "cost, pricing, budget, fees, how much something costs",
+    "results": "case studies, results, examples of past work",
+    "company": "who Cadre is, leadership, location, partners",
+    "off_topic": "anything unrelated to Cadre AI or AI for business",
+}
+# Topics where a person is always offered (plan.md: pricing is never quoted;
+# booking's answer IS the handoff form).
+HANDOFF_TOPICS = {"pricing", "booking"}
+
 # --- Handoff ---
 HANDOFF_TAG = "[HANDOFF]"    # the model ends a reply with this; the code shows the form
 
@@ -48,3 +77,10 @@ KNOWLEDGE_PATH = ROOT / "knowledge" / "cadre.md"
 
 def openrouter_key() -> str | None:
     return os.environ.get("OPENROUTER_API_KEY") or None
+
+
+def gateway_token(request_token: str | None = None) -> str | None:
+    """AI Gateway credential: an explicit API key wins; on Vercel, the per-request OIDC
+    token; locally, the OIDC token from .env.local."""
+    return (os.environ.get("AI_GATEWAY_API_KEY") or request_token
+            or os.environ.get("VERCEL_OIDC_TOKEN") or None)
