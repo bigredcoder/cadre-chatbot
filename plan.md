@@ -78,7 +78,7 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **0. Foundation:** repo, CLAUDE.md, this plan, .gitignore
 - [x] **1. Risk spikes + deploy early:** one Jev call from Python via AI Gateway; one OpenRouter call; "hello" page live on Vercel
 - [x] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
-- [ ] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
+- [x] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [ ] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
 - [ ] **5. Handoff + data:** Supabase schema, `/api/leads`, validation, event logging
 - [ ] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
@@ -128,6 +128,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | First deploy "succeeded" | Vercel served only static files; the Python app never ran (/api/health 404) | Checked the health endpoint, not just "Ready" | Set `"framework": "fastapi"` in vercel.json; added a .vercelignore so secrets are never uploaded |
 | 09-23 | First site scan said the 8 pillar names and security statements weren't public | They're on /strategy; the scan only read the homepage | Subagent read every services page | Knowledge updated; gaps list corrected |
 | 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
+| 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 7. What's next (with more time)

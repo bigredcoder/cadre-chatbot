@@ -115,7 +115,7 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
 
 ---
 
-## 2026-09-23 · Phase 3 prep: system prompt draft v1 · not committed yet
+## 2026-09-23 · Phase 3 prep: system prompt draft v1 · commit `3e4f5ff`
 **Did**
 - Drafted `prompts/system.md` (Brian owns it). Sections: identity and AI disclosure, the
   job, the grounding rule, handoff triggers, off-topic, answer style, safety, router hint,
@@ -136,7 +136,7 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
 
 ---
 
-## 2026-09-23 · Research received and applied to the design
+## 2026-09-23 · Research received and applied to the design · commit `3e4f5ff`
 **Did**
 - Saved the deep-research report: `docs/research/website-ai-chatbot-research-2026.md`
   (sources dated through Sep 2026, each with an evidence-strength label).
@@ -159,3 +159,35 @@ Each entry ends with a **Say in the review** line: the one-sentence version for 
   recover-once-then-hand-off, a link allow-list, and no promised response times.
 
 **Say in the review:** "I didn't design from habit. I commissioned research, kept what it confirmed, changed 17 things it challenged, and each change is traceable to a source."
+
+---
+
+## 2026-09-23 · Phase 3: Answering, live chat UI · commit pending
+**Did**
+- `app/config.py`: every model name, limit, and threshold in one place. Provisional answer
+  model `google/gemini-2.5-flash-lite` (Phase 6 picks the real one from evals).
+- `app/answer.py`: builds the prompt (system.md + knowledge + recent turns), streams from
+  OpenRouter, strips `[HANDOFF]` server-side (a half-typed tag never reaches the screen),
+  treats empty replies as errors, reports tokens, cost, and latency.
+- `app/main.py`: `POST /api/chat` streams Server-Sent Events (route / token / done / error),
+  plus message-length and turn limits and a friendly fallback with contact details.
+- `public/index.html`: the Cadence widget, built from the prototype plus research changes:
+  a labeled launcher ("Ask Cadre's AI"), focus into the panel on open and back on close,
+  Escape to close, screen-reader announcement once per answer, Start over, a privacy line,
+  links only to cadre.ai / portal.gocadre.ai / hello@gocadre.ai, and a "Behind the scenes"
+  toggle showing topic, model, latency, and cost.
+- `public/privacy.html`: what we store and what we don't.
+- 16 unit tests (fake network, no cost): prompt assembly, tag stripping, empty reply,
+  HTTP failure, missing key, chat streaming, fallback, and limits.
+
+**Found**
+- **AI bug caught:** my example answer in the system prompt contained facts not in the
+  knowledge file, and the model repeated them word for word. Rewrote the example using
+  knowledge-only facts and added a note that examples show format only. Retested: grounded.
+- Real answers take ~0.8–1.7 s and cost ~$0.0002–0.0004 each on the dev key.
+
+**Checked**
+- Local browser test, desktop and phone: open/close, focus, a starter question, a pricing
+  handoff (card shown, no tag leak), links on the allow-list only.
+
+**Say in the review:** "The first live test caught the model copying my prompt example instead of the sourced facts. That's why every example now uses only knowledge-file facts, and why I test answers against the source, not just 'does it sound right.'"

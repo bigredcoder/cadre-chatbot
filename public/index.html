@@ -1,8 +1,222 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cadence · Cadre AI support assistant (demo)</title></head>
-<body style="font-family:Inter,Arial,sans-serif;background:#FAF9F6;color:#333;padding:40px">
-<p>Cadence is coming soon. Phase 1 deploy check.</p>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cadence · Cadre AI assistant (demo)</title>
+<meta name="description" content="Take-home demo of Cadence, an AI support assistant for Cadre AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Inter+Tight:wght@700&family=Poppins:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root { --red:#DB4545; --red-ink:#B83232; --ink:#0C0407; --txt:#2b2b2b; --sub:#555; --warm:#FAF9F6; --line:#d9d5cc; --field:#bdb8ad; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:Inter,Arial,sans-serif; color:var(--txt); background:var(--warm); }
+  a { color:var(--red-ink); }
+  .skip { position:absolute; left:-999px; } .skip:focus { left:16px; top:16px; background:#fff; padding:8px; z-index:10; }
+  header { padding:20px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .wordmark { font-family:Poppins,Inter,sans-serif; font-size:20px; font-weight:500; }
+  .demo-note { font-size:13px; color:var(--sub); }
+  main { max-width:720px; margin:48px auto; padding:0 24px; text-align:center; }
+  .badge { display:inline-flex; gap:6px; align-items:center; background:#fff; border-radius:36px; padding:3px 10px 3px 3px; font-size:13px; }
+  .badge b { background:var(--red); color:#fff; border-radius:36px; padding:2px 8px; font-weight:500; }
+  h1 { font-family:'Inter Tight',Arial,sans-serif; font-weight:700; font-size:clamp(30px,5vw,44px); line-height:1.1; letter-spacing:-0.02em; margin:16px 0 12px; }
+  h1 span { color:var(--red); }
+  main p { color:var(--sub); font-size:16px; line-height:1.6; }
+
+  /* Launcher: labeled, not just an icon (research findings #1) */
+  #launcher { position:fixed; right:20px; bottom:20px; display:flex; align-items:center; gap:8px; background:var(--ink); color:#fff; border:none; border-radius:36px; padding:12px 18px; font:500 15px Inter,Arial,sans-serif; cursor:pointer; z-index:20; }
+  #launcher:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline:3px solid var(--red); outline-offset:2px; }
+
+  #panel { position:fixed; right:20px; bottom:84px; width:390px; max-width:calc(100vw - 24px); height:min(620px, calc(100vh - 110px)); background:#fff; border:1px solid #e5e2da; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.10); z-index:20; }
+  #panel[hidden] { display:none; }
+  .ph { padding:12px 14px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; }
+  .ph .t { flex:1; min-width:0; }
+  .ph .t strong { display:block; font-family:'Inter Tight',Arial,sans-serif; font-size:15px; }
+  .ph .t small { color:var(--sub); font-size:12px; }
+  .iconbtn { background:#fff; border:1px solid var(--line); border-radius:36px; padding:6px 10px; font:13px Inter,Arial,sans-serif; color:var(--txt); cursor:pointer; }
+  #log { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; font-size:14px; line-height:1.55; }
+  .msg { background:var(--warm); border-radius:14px; padding:9px 12px; max-width:90%; white-space:pre-wrap; overflow-wrap:anywhere; text-align:left; }
+  .msg ul { margin:4px 0; padding-left:18px; white-space:normal; }
+  .msg.user { align-self:flex-end; background:var(--ink); color:#fff; }
+  .msg.user a { color:#fff; }
+  .msg.error { background:#fdecec; color:var(--red-ink); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { background:#fff; border:1px solid var(--line); border-radius:36px; padding:7px 12px; font:13px Inter,Arial,sans-serif; color:var(--txt); cursor:pointer; text-align:left; }
+  .chip:hover { border-color:var(--red); color:var(--red-ink); }
+  .bts { border:1px dashed var(--line); border-radius:10px; padding:6px 9px; font:12px ui-monospace,Menlo,monospace; color:var(--sub); text-align:left; }
+  .handoff { border:1px solid #e5e2da; background:#fff; border-radius:14px; padding:12px; text-align:left; }
+  .handoff strong { font-family:'Inter Tight',Arial,sans-serif; }
+  .pf { padding:10px 14px; border-top:1px solid #eee; }
+  form.ask { display:flex; gap:6px; }
+  form.ask label { position:absolute; left:-999px; }
+  #q { flex:1; font:14px Inter,Arial,sans-serif; color:#222; border:1px solid var(--field); border-radius:36px; padding:10px 14px; }
+  #q::placeholder { color:#6b6b6b; }
+  .send { background:var(--ink); color:#fff; border:none; border-radius:36px; padding:0 14px; font:500 14px Inter,Arial,sans-serif; cursor:pointer; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--sub); flex-wrap:wrap; }
+  .row label { display:flex; align-items:center; gap:4px; }
+  .human { background:var(--ink); color:#fff; border:none; border-radius:36px; padding:6px 12px; font:500 12px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  @media (max-width:480px) { #panel { right:0; bottom:0; width:100vw; max-width:none; height:100dvh; border-radius:0; } #launcher[aria-expanded="true"] { display:none; } }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#launcher">Skip to the Cadre AI assistant</a>
+<header>
+  <span class="wordmark">Cadre AI</span>
+  <span class="demo-note">Take-home demo, not the official Cadre site · <a href="https://cadre.ai">cadre.ai</a></span>
+</header>
+<main>
+  <span class="badge"><b>Cadre AI</b>Support assistant demo</span>
+  <h1>Questions about Cadre?<br><span>Ask Cadence.</span></h1>
+  <p>Cadence is Cadre's AI assistant. It answers questions about Cadre's services, industries, the AI Maturity Index, and the client portal, using only what Cadre has published. A strategist is one click away.</p>
+</main>
+
+<button id="launcher" aria-controls="panel" aria-expanded="false">
+  <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/></svg>
+  Ask Cadre's AI
+</button>
+
+<section id="panel" role="dialog" aria-modal="false" aria-labelledby="ptitle" hidden>
+  <div class="ph">
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/><text x="16" y="21" text-anchor="middle" font-family="Inter Tight,Arial" font-weight="700" font-size="14" fill="#fff">C</text></svg>
+    <div class="t"><strong id="ptitle">Cadence</strong><small>Cadre's AI assistant · answers from cadre.ai</small></div>
+    <button class="iconbtn" id="restart" type="button">Start over</button>
+    <button class="iconbtn" id="close" type="button" aria-label="Close the assistant">✕</button>
+  </div>
+  <div id="log" aria-label="Conversation"></div>
+  <div class="sr" id="announce" aria-live="polite"></div>
+  <div class="pf">
+    <form class="ask" id="ask">
+      <label for="q">Ask Cadence a question</label>
+      <input id="q" name="q" autocomplete="off" maxlength="1000" placeholder="Ask a question">
+      <button class="send" type="submit">Send</button>
+    </form>
+    <div class="row">
+      <button class="human" id="human" type="button">Talk to a strategist</button>
+      <label><input type="checkbox" id="bts"> Behind the scenes</label>
+    </div>
+    <div class="row">Please don't share passwords or payment details. <a href="/privacy" target="_blank" rel="noopener">How chat data is used</a></div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const log = $("log"), q = $("q"), panel = $("panel"), launcher = $("launcher");
+  const ALLOWED = ["cadre.ai", "www.cadre.ai", "portal.gocadre.ai"];  // research findings #7
+  const STARTERS = ["What does Cadre do?", "Do you work with my industry?",
+                    "What is the AI Maturity Index?", "How do I book a call?",
+                    "How do you handle data security?"];
+  let history = [], busy = false, showBts = false;
+  let session = crypto.randomUUID();
+
+  // --- Safe rendering: text only, links only to Cadre's own sites ---
+  function esc(s) { return s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+  function linkify(s) {
+    return s.replace(/(https?:\/\/)?((?:www\.)?cadre\.ai(?:\/[\w\-\/]*)?|portal\.gocadre\.ai(?:\/[\w\-\/]*)?)|hello@gocadre\.ai/g, (m, proto, hostpath) => {
+      if (m === "hello@gocadre.ai") return `<a href="mailto:hello@gocadre.ai">${m}</a>`;
+      const url = new URL("https://" + hostpath.replace(/[.\/]+$/, ""));
+      if (!ALLOWED.includes(url.hostname)) return m;
+      return `<a href="${url.href}" target="_blank" rel="noopener">${esc(m)}</a>`;
+    });
+  }
+  function render(text) {
+    const lines = esc(text.trim()).split("\n");
+    let html = "", inList = false;
+    for (const raw of lines) {
+      const line = raw.replace(/\*\*(.+?)\*\*/g, "$1");
+      const item = line.match(/^\s*[*\-•]\s+(.*)/);
+      if (item) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${linkify(item[1])}</li>`; continue; }
+      if (inList) { html += "</ul>"; inList = false; }
+      html += linkify(line) + "\n";
+    }
+    return (inList ? html + "</ul>" : html).trim();
+  }
+
+  function add(cls, html) {
+    const d = document.createElement("div");
+    d.className = "msg " + cls; d.innerHTML = html;
+    log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+  }
+  function note(html) {
+    const d = document.createElement("div");
+    d.className = "bts"; d.innerHTML = html; d.hidden = !showBts;
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
+  function announce(text) { $("announce").textContent = ""; setTimeout(() => $("announce").textContent = text, 50); }
+
+  function welcome() {
+    log.innerHTML = "";
+    add("", "Hi, I'm Cadence, Cadre's AI assistant. I can answer questions about Cadre's services, industries, the AI Maturity Index, and the client portal, or connect you with a strategist.");
+    const w = document.createElement("div"); w.className = "chips";
+    STARTERS.forEach((s) => { const b = document.createElement("button"); b.className = "chip"; b.type = "button"; b.textContent = s; b.onclick = () => ask(s); w.appendChild(b); });
+    log.appendChild(w);
+  }
+
+  function showHandoff() {
+    // Phase 5 replaces this with the lead form (prefilled question, idempotent submit)
+    const d = document.createElement("div"); d.className = "handoff";
+    d.innerHTML = `<strong>Talk to an AI Strategist</strong><br>A real person from the Cadre team can help. Email <a href="mailto:hello@gocadre.ai">hello@gocadre.ai</a> or use <a href="https://cadre.ai/contact" target="_blank" rel="noopener">cadre.ai/contact</a>.`;
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
+
+  async function ask(text) {
+    text = (text || "").trim();
+    if (!text || busy) return;
+    busy = true; q.value = "";
+    add("user", esc(text));
+    history.push({ role: "user", content: text });
+    const bubble = add("", '<span style="color:#666">Writing an answer…</span>');
+    let answer = "", meta = {}, route = {}, failed = false;
+    try {
+      const resp = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: session, messages: history }) });
+      if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+      const reader = resp.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let cut;
+        while ((cut = buf.indexOf("\n\n")) >= 0) {
+          const block = buf.slice(0, cut); buf = buf.slice(cut + 2);
+          const ev = (block.match(/^event: (.*)$/m) || [])[1];
+          const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
+          if (ev === "token") { answer += data.text; bubble.innerHTML = render(answer); log.scrollTop = log.scrollHeight; }
+          else if (ev === "route") route = data;
+          else if (ev === "done") meta = data;
+          else if (ev === "error") { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(data.message); }
+        }
+      }
+    } catch (e) {
+      failed = true; bubble.className = "msg error";
+      bubble.innerHTML = render("Sorry, I couldn't connect just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.");
+    }
+    if (!failed && answer.trim()) {
+      history.push({ role: "assistant", content: answer.trim() });
+      announce("Cadence: " + answer.trim());
+      const cost = meta.cost_usd != null ? "$" + Number(meta.cost_usd).toFixed(5) : "n/a";
+      note(`topic: ${esc(route.topic || "n/a")} (${esc(route.router || "n/a")})<br>model: ${esc(meta.model || "n/a")} · ${meta.latency_ms ?? "?"} ms · ${cost}${meta.handoff ? "<br>handoff: yes" : ""}`);
+      if (meta.handoff) showHandoff();
+    } else {
+      announce(bubble.textContent);
+    }
+    busy = false; q.focus();
+  }
+
+  function open() { panel.hidden = false; launcher.setAttribute("aria-expanded", "true"); if (!log.children.length) welcome(); q.focus(); }
+  function close() { panel.hidden = true; launcher.setAttribute("aria-expanded", "false"); launcher.focus(); }
+
+  launcher.onclick = () => (panel.hidden ? open() : close());
+  $("close").onclick = close;
+  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  $("restart").onclick = () => { history = []; session = crypto.randomUUID(); welcome(); q.focus(); };
+  $("ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
+  $("human").onclick = () => { add("user", "Talk to a strategist"); showHandoff(); };
+  $("bts").onchange = (e) => { showBts = e.target.checked; document.querySelectorAll(".bts").forEach((n) => (n.hidden = !showBts)); };
+})();
+</script>
 </body>
 </html>
