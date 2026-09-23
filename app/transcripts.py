@@ -38,6 +38,8 @@ def redact(text: str | None) -> str | None:
 
 async def save_turn(row: dict) -> bool:
     """Insert one turn. Returns True if saved. Never raises."""
+    if not config.SAVE_TURNS:
+        return False
     row = {**row, "user_message": redact(row.get("user_message")),
            "assistant_message": redact(row.get("assistant_message"))}
     try:

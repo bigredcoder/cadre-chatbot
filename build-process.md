@@ -335,7 +335,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Phase 5 verified live, and one bug found
+## 2026-09-23 · Phase 5 verified live, and one bug found · fix `70f6902`
 **Checked** (on https://cadre-chatbot-xi.vercel.app)
 - "Can someone call me? My number is 858-555-0199" → `booking` 0.92 via Jev, asks for a
   person, handoff. Stored in Supabase as "My number is [phone removed]". Test row deleted.
@@ -349,3 +349,136 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
   added to CLAUDE.md and an entry to the AI-bug log.
 
 **Say in the review:** "Everything passed locally, but I checked every page after deploying and found the privacy page 500'ing in production. The logs showed why in one line: static files aren't in the Python bundle on Vercel."
+
+- Fix verified live: the widget links `/privacy.html` (200) and shows the new wording.
+
+---
+
+## 2026-09-23 · Phase 6: Evals and measurement (in progress)
+**Did**
+- `.claude/agents/eval-writer.md`: a read-only subagent that drafts test cases from the
+  research scenarios, the knowledge file, and the prompt. The session's delegation limit
+  blocked a new helper, so the job was handed to the existing research subagent with the
+  eval-writer instructions.
+- `evals/cases.yaml`: **26 cases** in 12 categories (brief scenarios, gaps, pricing, safety,
+  identity, injection, typos, multi-intent, follow-ups), each with a severity. 12 research
+  scenarios marked N/A with reasons (no accounts, orders, bookings, or localization).
+- `evals/run.py`: sends each case through the **real** `/api/chat` endpoint (real Jev, real
+  model), scores with code-only checks (no AI judge; research §8), and always checks: no
+  empty reply, no leaked tag, no dollar amounts, links only on the allow-list. Critical cases
+  can repeat (`--repeat 3`). Nothing is saved to the database during evals (`SAVE_TURNS=0`).
+- `evals/compare.py`: runs 13 candidate models in parallel and writes a ranked table.
+  Ranking rule: zero critical failures first, then pass rate, then cost.
+- Router now reports `route_ms` and `route_cost_usd` (Jev + fallback model), so the
+  with/without-Jev benchmark compares full cost, not just the answer.
+
+**Found**
+- **The subagent was wrong about the facts:** it claimed 3 knowledge quotes didn't match
+  cadre.ai. Re-running the verifier: 77/77 still match. Its web tool summarizes pages and
+  loses detail. → Facts are checked by script, never by an AI's reading.
+- **Baseline (gemini-2.5-flash-lite, Jev): 23/26.** Two failures were **test bugs** (they
+  failed correct, safe answers) and were fixed. One is a **real bot issue**: the model adds
+  `[HANDOFF]` when it merely *offers* a strategist, despite the prompt rule (seen in 2 of 3
+  failing replies). The model comparison will show which models follow the rule.
+- Baseline cost: ~$0.0004 per turn; median 1.3 s; routing median 0.44 s.
+
+**Say in the review:** "When a test fails, I read the reply before judging. Two 'failures' were my tests being too strict; one was a real habit of the model, and the comparison across 13 models tells me which models don't have it."
+
+**First comparison was invalid, and why (kept in `evals/results/invalid-parallel-run/`)**
+- Ran 13 models at 7 in parallel. Topic accuracy varied from 50% to 95%, which shouldn't
+  happen, because Jev picks the topic, not the answer model. The per-run check showed Jev
+  refused most calls under that load, so the fallback routed them. (Good news: the
+  fallback kept every answer flowing. Bad news: the comparison was contaminated.)
+- Fixes: 2 models at a time; the router now records Jev's HTTP status code in its note.
+- GPT-5 nano / mini excluded: blank replies on 48–49 of 52 runs (reasoning used the whole
+  token budget, same as the Phase 1 spike). They'd need reasoning settings.
+- Findings that stand regardless of routing: claude-haiku-4.5 produced links outside the
+  allow-list (4 runs); llama-4-maverick leaked system-prompt text (3 runs). Both critical.
+
+**Say in the review:** "My first comparison looked plausible but was wrong. Topic accuracy varied by answer model, which is impossible when Jev picks the topic. I traced it to Jev rejecting calls under parallel load, threw the run out, and reran it fairly."
+
+**Second comparison also contaminated → fixed-routes design**
+- At 2 models in parallel, Jev still refused many calls: the router's new error note showed
+  **HTTP 429 (rate limited) ×97**, 503 ×6. Real production finding: Jev rate-limits at
+  modest concurrency.
+- Production fix: **one quick retry (0.3 s) on 429/503**, then fall back. Unit-tested.
+- Testing fix: the question is "which *answer* model is best?", so routing must be held
+  constant. `evals.run --record-routes` routes every case once through live Jev, one at a
+  time; `evals.compare --routes` then gives every model the **identical** routes.
+- Recorded routes: 28 of 29 by Jev; 1 legitimate fallback (Jev 0.51 on the prompt-leak
+  trick, below the 0.6 threshold). The recording pass on gemini-2.5-flash-lite: 25/26,
+  **0 critical failures**.
+
+**Say in the review:** "To compare answer models fairly, I froze the routing: every model got the exact same Jev decisions, so the only variable was the model."
+
+**Fair comparison result (fixed routes, 11 models × 52 runs)**
+- **gemini-2.5-flash: 52/52, 0 critical**, 0.95 s median, $0.0009/turn. The only perfect score.
+- gemini-2.5-flash-lite (current): 51/52, 0 critical, the fastest (0.81 s), 4.5× cheaper.
+- The most common critical failure: **implying a SOC 2 certification** (7 of 11 models).
+  llama-4-maverick leaked prompt text 3/3. Full table in `plan.md` §5.
+- Recommendation: gemini-2.5-flash. Accuracy first; $0.0009/turn still covers roughly
+  5,000 replies on a $5 key (ESTIMATE). Awaiting Brian's decision.
+
+**Say in the review:** "I ran 11 models through the same 26 cases with identical routing. Seven of them, at least once, implied a SOC 2 certification you've never published. That's the failure that decided it."
+
+**Benchmark: with vs. without Jev (Brian's task), same model, same 26 cases**
+- **With Jev: 51/52, 0 critical, topic 100%, routing 0.38 s, $0.000017 per route.**
+- Without Jev: 44/52, **7 critical**, topic 85%, routing 0.66 s, $0.000072 per route.
+- Without Jev, the chat model routed "Are you SOC 2 certified?" to `company` 3/3 times, so the
+  handoff never fired; Jev got it right every time.
+- Caveat: Jev returned HTTP 429 on 11 of 52 calls even sequentially; the fallback covered
+  each one. Production needs a higher rate-limit tier (added to "what's next").
+
+**Say in the review:** "I didn't assume Jev helped. I benchmarked it: with Jev, zero critical failures; without it, seven, because the chat model misfiled security questions and the handoff never fired. Jev was also faster and 4× cheaper per routing decision."
+
+**Correction: reading the real failing replies changed the results (Brian asked for examples)**
+- Built `evals/report.py`: every failure listed with the question, the bot's actual reply,
+  and what the check caught. It runs automatically after each comparison.
+- Reading them showed my checker was wrong, not the models: "Cadre doesn't publish its
+  security certifications publicly" was failed for not using my exact phrases; curly
+  apostrophes (don’t), non-breaking hyphens (eight‑pillar), and **bold** links were also
+  failed. My claim that "7 of 11 models implied a SOC 2 certification" was **false**.
+- Without Jev, replies stayed safe and the handoff still showed via the model's tag; the
+  failures were wrong topic *labels*. My claim that "the handoff never fired" was **false**.
+- Fixes: text normalization, wider accepted wordings, severity by what failed (critical =
+  invented fact / leak / unsafe link / pretend human; major = wrong handoff or missing fact;
+  moderate = wrong topic label). `evals/rescore.py` re-checks saved replies with no new calls.
+- **Corrected results:** three models perfect (gemini-2.5-flash 1.0 s, gpt-4.1-mini 1.3 s,
+  claude-haiku-4.5 2.0 s). The only real critical failure: llama-4-maverick printed its full
+  system prompt 3/3. Jev vs no Jev: 51 vs 44 passes, topic labels 100% vs 85%, routing
+  0.38 s vs 0.66 s, 4× cheaper routing; no critical failures either way.
+- New CLAUDE.md rule: never report an eval failure without its real example.
+
+**Say in the review:** "My first write-up of the comparison was wrong. Brian asked to see an example of each error, and the examples showed my test was too strict, not the models. I fixed the checker, rescored every saved reply, and now every failure in the report comes with the actual reply."
+
+**Decision: keep Jev; plan for its usage tier (Brian, 09-23)**
+- Jev (released 2026-09-15) stays. The evidence: better routing (100% vs 85% topic labels,
+  51 vs 44 passes), faster (0.38 s vs 0.66 s), 4× cheaper per routing decision.
+- Usage tier: rate limits hit ~20% of calls in testing. The fallback (one retry → chat-model
+  routing) already covers it: 11/11 rate-limited calls were answered normally. Production
+  note: move to a higher tier and alert on the fallback rate. Tracked in `plan.md` §7.
+
+**Say in the review:** "I adopted a tool released eight days earlier, but only after benchmarking it against the alternative, and I built the fallback before depending on it. When Jev rate-limited us, visitors never noticed."
+
+**Decision: answer model = google/gemini-2.5-flash (Brian, 09-23)**
+- Perfect 52/52 and the fastest of the three perfect models (1.0 s). ~$0.91 per 1,000 answers.
+  `app/config.py` updated; the "Why this model" write-up is in `plan.md` §5.
+
+**Say in the review:** "Accuracy first, then speed: three models were perfect, and Gemini 2.5 Flash was the fastest of them. GPT-4.1 mini is my documented backup if cost matters more."
+
+**Running costs added (Brian, 09-23): `plan.md` §5a**
+- Hosting (Vercel Hobby) $0; database (Supabase) $10/month; answers ~$0.91 per 1,000;
+  Jev routing ~$0.02 per 1,000 (free credits so far); build and testing spend so far **$2.46**.
+- Note: I had estimated the model comparisons at "under $1". Actual testing spend is $2.46
+  because the two invalid runs had to be redone and Claude Haiku costs about 5× more per answer.
+
+**Say in the review:** "All-in it's about ten dollars a month fixed plus a tenth of a cent per answer, and I can show where every dollar went, including what the testing cost."
+
+**Full grid: all 11 models with and without Jev (Brian's request)**
+- `evals/results/full-grid.md`; failure examples in `compare-nojev-failures.md`.
+- **Jev improved accuracy, speed, and cost for all 11 models.** gemini-2.5-flash: 52 vs 44
+  correct, 1.4 s vs 1.6 s (including Jev's routing time), $0.91 vs $1.04 per 1,000.
+- Real critical examples without Jev: gpt-4.1-nano invented `linkedin.com/company/gocadre`;
+  gemini-2.5-flash returned one empty reply (the visitor saw the friendly fallback).
+
+**Say in the review:** "Across all 11 models, adding Jev made every one more accurate, faster, and cheaper. That's not a vendor claim; it's my test set."

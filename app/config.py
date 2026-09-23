@@ -24,9 +24,9 @@ _load_dotenv()
 
 # --- Answer model (OpenRouter) ---
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-# Provisional pick from the Phase 1 spike (answered correctly, cheapest).
-# Phase 6 replaces this with a model chosen by the eval comparison.
-ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash-lite")
+# Chosen 2026-09-23 from an 11-model eval comparison (plan.md §5, "Why this model"):
+# 52/52 with zero critical or major failures, and the fastest of the three perfect models.
+ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash")
 ANSWER_MAX_TOKENS = 500      # hard cap per reply: keeps answers short and spend bounded
 ANSWER_TEMPERATURE = 0.2     # low: we want consistent, grounded answers, not creativity
 ANSWER_TIMEOUT_S = 30
@@ -40,6 +40,7 @@ MAX_TURNS_PER_SESSION = 30   # beyond this, point them to a person
 JEV_URL = "https://ai-gateway.vercel.sh/v1/evaluate"
 JEV_MODEL = "typesafe-ai/jev"
 JEV_TIMEOUT_S = 6
+JEV_RETRY_DELAY_S = 0.3   # one retry on 429/503 (measured 09-23: Jev rate-limits under load)
 # Below this, Jev's topic isn't trusted and the chat model classifies instead.
 # ESTIMATE: 0.6 is a starting point; Phase 6 evals tune it (research findings: validate
 # confidence against labeled outcomes before trusting it as a threshold).
@@ -59,6 +60,9 @@ TOPICS = {  # key: description Jev uses to decide
     "company": "who Cadre is, leadership, location, partners",
     "off_topic": "anything unrelated to Cadre AI or AI for business",
 }
+# "jev" (normal) or "model_only" (benchmark: skip Jev, the chat model routes everything)
+ROUTER_MODE = os.environ.get("ROUTER_MODE", "jev")
+
 # Topics where a person is always offered (plan.md: pricing is never quoted;
 # booking's answer IS the handoff form).
 HANDOFF_TOPICS = {"pricing", "booking"}
@@ -74,6 +78,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://juvxbhiwpdbxfxgtaxcg.supa
 SUPABASE_PUBLISHABLE_KEY = os.environ.get(
     "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_ZvU8JpnOjhQqb6IlLiGlZw_6KF0nQvs"
 )
+SAVE_TURNS = os.environ.get("SAVE_TURNS", "1") != "0"   # evals set 0: tests aren't visitors
 SAVE_TIMEOUT_S = 3            # saving must never slow the visitor down
 RETENTION_DAYS = 30           # enforced by a nightly pg_cron job in the database
 

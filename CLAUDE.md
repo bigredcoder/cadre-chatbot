@@ -61,13 +61,16 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - Before any commit: `ruff check .` and `pytest -q` must pass.
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
 - When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
+- **Never report an eval failure without its real example** (question, actual reply, what
+  the check caught). Read failing replies before claiming a model failed: checks can be wrong.
+  `python -m evals.report <label>` writes them.
 - **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
   append or update an entry: did / found / decided / checked / commit hash, plus a
   one-line **"Say in the review"** talking point. Facts only, no marketing. Brian uses this
   file to prepare the walkthrough, so never let it fall behind.
 
 ## Commands (always use the project venv: `.venv/bin/...`)
-- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn`
+- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml`
   (don't `pip install -e .`: the repo isn't laid out as a package, and it fails)
 - Run locally: `.venv/bin/uvicorn app.main:app --reload` (then open http://localhost:8000)
 - Unit tests: `.venv/bin/python -m pytest -q`

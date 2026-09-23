@@ -86,7 +86,7 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [x] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
 - [x] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase `conversations` + `chat_events` with redaction and 30-day deletion
-- [ ] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
+- [x] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
   - **Task (Brian, 09-23): justify the model choice with data.** Run the same eval set
     against every candidate answer model (not just 3 if more are viable) and record
     quality, invented facts, handoff accuracy, latency, and cost per conversation in §5.
@@ -124,10 +124,86 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
 ## 5. Model comparison
 *(filled in during Phase 6: see the task under Phase 6)*
 
-**Why this model:** *(to write after the comparison)*
+**Why this model: `google/gemini-2.5-flash` (Brian's decision, 09-23)**
+- **Accuracy first:** 52/52 with no critical or major failures, one of only three perfect
+  models of the 11 tested with identical routing.
+- **Speed decided among the perfect three:** 1.0 s median vs 1.3 s (gpt-4.1-mini) and 2.0 s
+  (claude-haiku-4.5). Speed is what a visitor feels.
+- **Cost is acceptable, not the lowest:** ~$0.91 per 1,000 answers (ESTIMATE from eval runs):
+  about 1.7× gpt-4.1-mini, and about 5× cheaper than claude-haiku-4.5. A $5 key covers
+  roughly 5,000 answers.
+- **Why not the runners-up:** gemini-2.5-flash-lite is faster and 4.5× cheaper but made one
+  major error (a needless handoff); gpt-4.1-mini is a strong, cheaper backup if cost matters
+  more than 0.3 s; llama-4-maverick printed its system prompt 3/3 times.
+- **Limits:** 52 runs on one test set can't prove zero failures (research §8). Rerun the evals
+  whenever the prompt, knowledge, or model changes.
 
-| Model | Eval pass rate | Invented facts | p50 latency | Cost / conversation |
+**Full grid, all 11 models with and without Jev:** `evals/results/full-grid.md`. Jev improved
+accuracy, speed, and cost for **every** model (11/11). Examples: gemini-2.5-flash 52 vs 44
+correct; gpt-oss-120b 51 vs 16 (it misrouted 88% of messages on its own); gpt-4.1-nano
+without Jev invented a LinkedIn URL.
+
+**Why Jev for routing** (benchmark, same model, same cases): 51 vs 44 passes, topic labels
+100% vs 85%, routing 0.38 s vs 0.66 s, and 4× cheaper per decision than letting the chat model
+route. Its rate limits are covered by a proven fallback. Full write-up: task in §6a.
+
+Fair comparison, 2026-09-23 (**corrected** the same day after reviewing every failing reply;
+see "Correction" below): 26 cases, critical cases ×3 (52 runs per model), **identical Jev
+routing for every model** (`evals/results/routes-jev.json`), code-only scoring.
+Failure examples: `evals/results/compare-fixed-failures.md`. Latency excludes routing (+~0.4 s live).
+
+| Model | Passed | Critical | Major | Median | $/answer |
+|---|---|---|---|---|---|
+| **google/gemini-2.5-flash** | **52/52** | 0 | 0 | **1.0 s** | 0.00091 |
+| openai/gpt-4.1-mini | 52/52 | 0 | 0 | 1.3 s | 0.00055 |
+| anthropic/claude-haiku-4.5 | 52/52 | 0 | 0 | 2.0 s | 0.00437 |
+| openai/gpt-oss-120b | 51/52 | 0 | 0 | 5.0 s | 0.00024 |
+| deepseek/deepseek-chat-v3.1 | 51/52 | 0 | 1 | 3.9 s | 0.00061 |
+| google/gemini-2.5-flash-lite | 51/52 | 0 | 1 | 0.8 s | 0.00020 |
+| mistralai/mistral-small-3.2-24b-instruct | 49/52 | 0 | 3 | 2.3 s | 0.00035 |
+| openai/gpt-4o-mini | 48/52 | 0 | 3 | 1.5 s | 0.00038 |
+| qwen/qwen3-235b-a22b-2507 | 46/52 | 0 | 3 | 2.1 s | 0.00019 |
+| openai/gpt-4.1-nano | 48/52 | 0 | 4 | 1.1 s | 0.00017 |
+| meta-llama/llama-4-maverick | 48/52 | **3** | 1 | 1.1 s | 0.00077 |
+| openai/gpt-5-nano, gpt-5-mini | excluded | | | | |
+
+(GPT-5 nano/mini: blank replies on 48–49 of 52 runs; reasoning consumed the 500-token budget.)
+Only real critical failure: llama-4-maverick printed its full system prompt, 3 of 3 times.
+The most common real major failure: showing the strategist form for simple questions
+("Where's the portal?").
+
+**Correction (09-23):** an earlier version of this table claimed "7 of 11 models implied a
+SOC 2 certification." False. Reviewing the actual replies (Brian asked for examples) showed
+they were correct ("Cadre doesn't publish its security certifications publicly"). The checker
+was too strict: exact wording, curly apostrophes, non-breaking hyphens, markdown bold. Fixed
+the checker, scored failures by *what* failed (see evals/README.md), and rescored the saved
+replies with no new calls.
+
+**Why this model:** *(recommendation: gemini-2.5-flash; pending Brian's decision)*
+
+Fair comparison, 2026-09-23: 26 cases, critical cases ×3 (52 runs per model), **identical
+Jev routing for every model** (`evals/results/routes-jev.json`), code-only scoring.
+Full table: `evals/results/compare-fixed.md`. Latency excludes routing (+~0.4 s live).
+
+| Model | Passed | Critical fails | Median | $/turn |
 |---|---|---|---|---|
+| **google/gemini-2.5-flash** | **52/52** | **0** | 0.95 s | 0.00091 |
+| google/gemini-2.5-flash-lite | 51/52 | 0 | 0.81 s | 0.00020 |
+| qwen/qwen3-235b-a22b-2507 | 46/52 | 0 | 2.1 s | 0.00019 |
+| deepseek/deepseek-chat-v3.1 | 50/52 | 1 | 3.9 s | 0.00062 |
+| openai/gpt-4.1-mini | 50/52 | 2 | 1.3 s | 0.00055 |
+| anthropic/claude-haiku-4.5 | 49/52 | 2 | 2.0 s | 0.00437 |
+| openai/gpt-4o-mini | 47/52 | 2 | 1.5 s | 0.00038 |
+| mistralai/mistral-small-3.2-24b-instruct | 47/52 | 4 | 2.3 s | 0.00035 |
+| openai/gpt-4.1-nano | 43/52 | 5 | 1.1 s | 0.00017 |
+| meta-llama/llama-4-maverick | 45/52 | 6 | 1.1 s | 0.00077 |
+| openai/gpt-oss-120b | 38/52 | 11 | 5.0 s | 0.00024 |
+| openai/gpt-5-nano, gpt-5-mini | excluded | | | |
+
+(GPT-5 nano/mini: blank replies on 48–49 of 52 runs; reasoning consumed the 500-token budget.)
+
+Most common critical failure across models: **implying a SOC 2 certification** Cadre never
+published (7 of 11 models, at least once). llama-4-maverick leaked prompt text 3/3.
 
 ## 6. AI-bug log
 Where AI output was wrong or weak, how it was caught, and what changed.
@@ -143,7 +219,25 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
 | 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
 | 09-23 | `/privacy` route returning `FileResponse(public/privacy.html)` | Worked locally, 500 on Vercel: `public/` isn't bundled into the Python function | Post-deploy check of each page; traceback in `vercel logs` | Link to the static `/privacy.html`; gotcha added to CLAUDE.md |
+| 09-23 | eval-writer subagent claimed 3 knowledge quotes didn't match cadre.ai | False: its web tool summarizes pages and loses detail | Re-ran `verify_knowledge.py`: 77/77 still match live HTML | Kept the facts; rule: facts are checked by script, never by an AI's reading |
+| 09-23 | 2 eval cases written too strictly | They failed correct, safe answers (test bugs, not bot bugs) | Read each failing reply before judging | Widened the expected wording; logged as test fixes |
+| 09-23 | Claude's summary of the model comparison: "7 of 11 models implied a SOC 2 certification"; "without Jev the handoff never fired" | Both false. The replies were correct; the checker was too strict (wording, curly quotes, bold) and scored a wrong topic label as critical | Brian asked for real examples of each error; reading them exposed it | Checker normalizes text; severity comes from what failed; saved replies rescored; failure-example reports generated automatically |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
+
+## 5a. Running costs (Brian, 09-23)
+Actual where measured; ESTIMATE / ASSUMED where not.
+
+| Item | What it is | Cost now (demo) | At production scale |
+|---|---|---|---|
+| **Vercel hosting** | Hobby plan: the app, deploys, OIDC auth | **$0** | Hobby is for non-commercial use; a real Cadre deployment would need a paid plan (ASSUMED ~$20 per team member/month, check Vercel pricing) |
+| **Supabase database** | Project `cadre-chatbot` (conversation storage) | **$10/month** (quoted by Supabase when created; Brian deleted another project to offset it) | Same, until storage or traffic outgrows the compute size |
+| **Answer model** | gemini-2.5-flash via OpenRouter | ~**$0.91 per 1,000 answers** (measured in evals) | Scales with traffic: 10,000 answers/month ≈ $9 (ESTIMATE) |
+| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); ~$0.02 per 1,000 messages at list price (measured cost field) | ~$0.20 per 10,000 messages (ESTIMATE); a higher rate-limit tier may cost more (unknown) |
+| **Domain** | Using the free `cadre-chatbot-xi.vercel.app` | $0 | ~$10–20/year for a custom domain (ESTIMATE) |
+| **Build and testing spend** | Dev OpenRouter key: evals, 11-model comparisons, benchmarks | **$2.46 so far** (actual, 09-23) | Each full eval run of one model ≈ $0.02–0.25 depending on model |
+
+**Demo total:** about **$10/month** fixed (Supabase), plus under $1 in model usage for the
+review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
 
 ## 6a. Documentation tasks (for the review)
 - **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the
@@ -153,7 +247,15 @@ Where AI output was wrong or weak, how it was caught, and what changed.
   auth via Vercel OIDC, and the Phase 1 / Phase 4 measurements. Target:
   `docs/jev-routing.md` plus a diagram. Not started.
 
-- **Benchmark with vs. without Jev (Brian, 09-23):** run the same eval set two ways,
+- **DONE 09-23 (corrected). Benchmark with vs. without Jev.** Same model (gemini-2.5-flash),
+  26 cases × critical ×3: **with Jev 51/52, topic labels 100%, handoff 97%, routing 0.38 s,
+  $0.000017/route**; without Jev 44/52, topic labels 85%, handoff 94%, routing 0.66 s,
+  $0.000072/route. **Neither had a critical failure**; without Jev, replies stayed safe but
+  7 were mislabeled (e.g. "Are you SOC 2 certified?" filed as `company`). An earlier claim
+  that "the handoff never fired" without Jev was wrong: the model's own tag still showed
+  it. Caveat: Jev returned HTTP 429 on 11/52 calls even sequentially (the fallback covered
+  them). Files: `evals/results/bench-*.json`, failure examples in `bench-failures.md`.
+- *(original task)* **Benchmark with vs. without Jev (Brian, 09-23):** run the same eval set two ways,
   (a) Jev routing + rules and (b) chat-model-only routing (the fallback path, forced on),
   and compare topic accuracy, handoff accuracy, latency (median and slow tail), cost per
   conversation, and off-topic/injection handling. It answers "was Jev worth adding?" with
@@ -161,4 +263,11 @@ Where AI output was wrong or weak, how it was caught, and what changed.
   Do it in Phase 6 alongside the model comparison. Not started.
 
 ## 7. What's next (with more time)
-*(filled in as we go)*
+- **Jev usage tier (Brian, 09-23):** Jev returned HTTP 429 (rate limited) on ~20% of calls in
+  sequential testing. For production traffic, move to a paid or higher AI Gateway tier. The
+  **fallback is already built and proven:** on 429/503 the router retries once after 0.3 s,
+  then the chat model routes the message. In evals, all 11 rate-limited calls were answered
+  normally. Optional next steps: a short-lived route cache for repeated questions, and an
+  alert when the fallback rate passes a threshold (the `router` column in `chat_turns`
+  already records it).
+- Reasoning models (GPT-5 family): test with reasoning effort set to minimal and a larger token budget.
