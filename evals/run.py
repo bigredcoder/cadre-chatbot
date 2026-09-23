@@ -142,6 +142,7 @@ def main() -> int:
 
     # Configure BEFORE importing the app (config reads the environment at import time)
     os.environ["SAVE_TURNS"] = "0"
+    os.environ["RATE_LIMIT_PER_MINUTE"] = os.environ["RATE_LIMIT_PER_DAY"] = "100000"
     if args.model:
         os.environ["ANSWER_MODEL"] = args.model
     if args.no_jev:

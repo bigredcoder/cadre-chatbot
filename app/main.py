@@ -1,5 +1,6 @@
 """Web routes for Cadence. Routes only: logic lives in the other app/ modules."""
 import json
+import logging
 import re
 from typing import Literal
 
@@ -7,22 +8,25 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from app import config
+from app import config, guards
 from app.answer import AnswerError, stream_answer
 from app.router import route
 from app.transcripts import save_turn
 
 app = FastAPI(title="Cadence", docs_url=None, redoc_url=None)
+log = logging.getLogger("cadence")
 
 
 class Message(BaseModel):
     role: Literal["user", "assistant"]
+    # Assistant replies can be longer than visitor messages; both are capped server-side
     content: str = Field(min_length=1, max_length=config.MAX_MESSAGE_CHARS * 4)
 
 
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=8, max_length=64)
-    messages: list[Message] = Field(min_length=1)
+    # The client sends history; the server only accepts the recent turns (code review #2)
+    messages: list[Message] = Field(min_length=1, max_length=config.MAX_HISTORY_MESSAGES)
 
 
 def sse(event: str, data: dict) -> str:
@@ -46,9 +50,16 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
     history = [m.model_dump() for m in req.messages]
     latest = history[-1]
     oidc = request.headers.get("x-vercel-oidc-token")  # Vercel's per-request identity
+    allowed = guards.allow(guards.client_ip(request.headers))
 
     async def events():
-        if latest["role"] != "user" or len(latest["content"]) > config.MAX_MESSAGE_CHARS:
+        if not allowed:
+            yield sse("error", {"message": "You're sending messages quickly. Please wait a "
+                                "minute, or reach the team at hello@gocadre.ai."})
+            return
+        too_long = any(m["role"] == "user" and len(m["content"]) > config.MAX_MESSAGE_CHARS
+                       for m in history)
+        if latest["role"] != "user" or too_long:
             yield sse("error", {"message": "Please keep messages under 1,000 characters."})
             return
         turn = {"session_id": req.session_id, "user_message": latest["content"]}
@@ -60,7 +71,12 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
                              "handoff": True})
             return
 
-        decision = await route(history, oidc)
+        try:
+            decision = await route(history, oidc)
+        except Exception:  # deliberate: the visitor must always get a reply
+            log.exception("router crashed")  # visible in Vercel logs
+            yield sse("error", {"message": FALLBACK})
+            return
         yield sse("route", decision.as_dict())
         turn.update(topic=decision.topic, confidence=decision.confidence,
                     router=decision.router, asks_for_human=decision.asks_for_human)
@@ -88,8 +104,10 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
                     item["handoff"] = decision.handoff or item["handoff"]
                     done = item
                 yield sse(kind, item)
-        except AnswerError:
+        except Exception as err:  # AnswerError or anything unexpected
             # Never show a blank bubble or a stack trace (research findings #11)
+            if not isinstance(err, AnswerError):
+                log.exception("answer stream crashed")
             yield sse("error", {"message": FALLBACK})
             await save_turn({**turn, "assistant_message": None, "outcome": "error"})
             return
@@ -125,17 +143,19 @@ _seen_leads: set[str] = set()  # per-instance; enough to absorb double-clicks in
 
 
 @app.post("/api/leads")
-def lead(req: LeadRequest) -> dict:
+def lead(req: LeadRequest, request: Request) -> dict:
     """DEMO handoff form (Brian's decision): validates like a real form, sends nothing,
     stores nothing, and says so. A repeat submit with the same key returns the same
     result instead of creating a second request (research findings #10)."""
+    if not guards.allow(guards.client_ip(request.headers)):
+        return {"ok": False, "field": None, "message": "Please wait a minute and try again."}
     if not EMAIL_OK.match(req.email.strip()):
         return {"ok": False, "field": "email", "message": "Enter a valid email address."}
     duplicate = req.idempotency_key in _seen_leads
     if len(_seen_leads) > 5000:  # keep memory bounded
         _seen_leads.clear()
     _seen_leads.add(req.idempotency_key)
-    first = req.name.strip().split()[0]
+    first = (req.name.split() or ["there"])[0]
     return {
         "ok": True,
         "duplicate": duplicate,

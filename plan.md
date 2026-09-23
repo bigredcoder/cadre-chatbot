@@ -139,7 +139,7 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
   whenever the prompt, knowledge, or model changes.
 
 **Full grid, all 11 models with and without Jev:** `evals/results/full-grid.md`. Jev improved
-accuracy, speed, and cost for **every** model (11/11). Examples: gemini-2.5-flash 52 vs 44
+accuracy and speed for **every** model (11/11), and cost for 10 of 11 (gpt-oss-120b: equal). Examples: gemini-2.5-flash 52 vs 44
 correct; gpt-oss-120b 51 vs 16 (it misrouted 88% of messages on its own); gpt-4.1-nano
 without Jev invented a LinkedIn URL.
 
@@ -222,6 +222,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | eval-writer subagent claimed 3 knowledge quotes didn't match cadre.ai | False: its web tool summarizes pages and loses detail | Re-ran `verify_knowledge.py`: 77/77 still match live HTML | Kept the facts; rule: facts are checked by script, never by an AI's reading |
 | 09-23 | 2 eval cases written too strictly | They failed correct, safe answers (test bugs, not bot bugs) | Read each failing reply before judging | Widened the expected wording; logged as test fixes |
 | 09-23 | Claude's summary of the model comparison: "7 of 11 models implied a SOC 2 certification"; "without Jev the handoff never fired" | Both false. The replies were correct; the checker was too strict (wording, curly quotes, bold) and scored a wrong topic label as critical | Brian asked for real examples of each error; reading them exposed it | Checker normalizes text; severity comes from what failed; saved replies rescored; failure-example reports generated automatically |
+| 09-23 | Code written across Phases 3–5 | code-reviewer subagent found 8 issues: a stream that could end silently ("Writing an answer…" forever), client-controlled history size, transcript save delaying the UI, a form promising a follow-up the demo never sends, a whitespace name 500, Start over leaking into the new chat, short phones unredacted, a stale .env.example | Pre-submission review by the `code-reviewer` subagent; each claim checked against the code first (it had been wrong once before) | All 8 fixed with regression tests (50 unit tests); verifying #7 also exposed dates being redacted as phones, now fixed |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 5a. Running costs (Brian, 09-23)
@@ -271,3 +272,14 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   alert when the fallback rate passes a threshold (the `router` column in `chat_turns`
   already records it).
 - Reasoning models (GPT-5 family): test with reasoning effort set to minimal and a larger token budget.
+- **Rate limiting that holds across instances:** move `guards.py` counters to a shared store
+  (or Vercel firewall rules). Today's in-memory limiter stops scripts, not a distributed attack.
+- **Real lead capture:** replace the demo form with a `leads` table (insert-only) plus a CRM
+  sync (schema sketched in `db/schema.sql`); measure qualified meetings, not form fills.
+- **One-line embed for cadre.ai:** a `<script>` tag that loads the widget on any page.
+- **Content-gap review:** a weekly query on `chat_turns` (top handoff and off-topic topics)
+  feeding `/add-knowledge`; a small dashboard later.
+- **Evals in CI:** run unit tests on every push, and `evals.run` nightly with a zero-critical gate.
+- **Tune Jev's topic definitions** against labeled real questions from `chat_turns`.
+- **Accessibility:** a manual pass with a screen reader user, beyond the automated checks.
+- **A/B test** the widget against the plain contact page for qualified-meeting rate (research §8).

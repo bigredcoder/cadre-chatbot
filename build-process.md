@@ -354,7 +354,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Phase 6: Evals and measurement (in progress)
+## 2026-09-23 · Phase 6: Evals and measurement · commit `b2133b3`
 **Did**
 - `.claude/agents/eval-writer.md`: a read-only subagent that drafts test cases from the
   research scenarios, the knowledge file, and the prompt. The session's delegation limit
@@ -476,9 +476,42 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 **Full grid: all 11 models with and without Jev (Brian's request)**
 - `evals/results/full-grid.md`; failure examples in `compare-nojev-failures.md`.
-- **Jev improved accuracy, speed, and cost for all 11 models.** gemini-2.5-flash: 52 vs 44
+- **Jev improved accuracy and speed for all 11 models (cost: lower for 10, equal for 1).** gemini-2.5-flash: 52 vs 44
   correct, 1.4 s vs 1.6 s (including Jev's routing time), $0.91 vs $1.04 per 1,000.
 - Real critical examples without Jev: gpt-4.1-nano invented `linkedin.com/company/gocadre`;
   gemini-2.5-flash returned one empty reply (the visitor saw the friendly fallback).
 
-**Say in the review:** "Across all 11 models, adding Jev made every one more accurate, faster, and cheaper. That's not a vendor claim; it's my test set."
+**Say in the review:** "Across all 11 models, adding Jev made every one more accurate and faster (and cheaper for 10 of 11; equal for gpt-oss-120b). That's not a vendor claim; it's my test set."
+
+---
+
+## 2026-09-23 · Phase 7: Harden, review, document, test · commit pending
+**Did**
+- **Safety limits:** `app/guards.py`: 12 messages/minute and 200/day per visitor IP, with a
+  friendly message when limited. Honest limit: in-memory per serverless instance (stops
+  scripts, not a distributed attack), documented in the code and in "what's next".
+- **Claude Code setup completed:** `.claude/commands/` `/eval`, `/add-knowledge`, `/ship`;
+  `.claude/agents/code-reviewer.md`; `.claude/hooks/pre_commit_gate.py` blocks any commit if
+  lint or unit tests fail. Tested both ways: a clean tree is allowed, and a planted lint error
+  is blocked with the reason.
+- **Code review** by the `code-reviewer` subagent (via the existing helper, given the session's
+  delegation limit): 0 critical, 1 major, 7 minor. I checked each claim against the code first.
+  All 8 fixed, each with a regression test.
+- Checking the redaction fix exposed a new bug: dates like 2026-09-23 were redacted as phone
+  numbers. Phones are now judged by digit count (7–15), ISO dates are skipped, and text is
+  re-capped after redaction.
+- **Docs:** `README.md`, `docs/jev-routing.md` (Brian's task), and an expanded "what's next".
+  Two of my own claims were corrected before they shipped: "28 routes ≥0.72" (actual lowest
+  0.61) and "Jev made every model cheaper" (true for 10 of 11; equal for gpt-oss-120b).
+- **Browser tests:** `e2e/test_widget.py`: 6 Playwright tests (open + focus + AI disclosure,
+  a real streamed answer, the pricing form with validation and double-submit, keyboard only,
+  phone size, privacy page). **6/6 pass locally** against the fixed code.
+- **Load test:** `tools/load_test.py`: concurrent visitors, plus a one-visitor burst to prove
+  the rate limit answers politely with no 500s. It runs against the live site after deploy.
+
+**Checked**
+- 50/50 unit tests. Evals after the fixes: 25/26, **0 critical**; the one miss (with its real
+  reply) is the known needless-handoff habit: "Where's the portal?" answered correctly, then
+  it offered login help with the form. Logged as a known issue, not hidden.
+
+**Say in the review:** "Before submitting I had a reviewer subagent audit the code. It found a way the chat could hang on 'Writing an answer…' forever. I verified every finding before fixing it, and each fix has a test."

@@ -172,7 +172,7 @@
     const d = document.createElement("form"); d.className = "handoff"; d.noValidate = true;
     d.setAttribute("aria-labelledby", id + "t");
     d.innerHTML = `<strong id="${id}t">Talk to an AI Strategist</strong>
-      <div style="font-size:13px;color:var(--sub)">A real person from the Cadre team follows up by email.</div>
+      <div style="font-size:13px;color:var(--sub)">Demo: nothing is sent. In production, a strategist from the Cadre team follows up by email.</div>
       <label for="${id}n">Name</label><input id="${id}n" name="name" autocomplete="name" required>
       <label for="${id}e">Email</label><input id="${id}e" name="email" type="email" autocomplete="email" required>
       <label for="${id}s">Subject</label><input id="${id}s" name="subject" required>
@@ -204,17 +204,41 @@
     d.querySelector(`#${id}n`).focus();
   }
 
+  const FALLBACK_MSG = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
+
   async function ask(text) {
     text = (text || "").trim();
     if (!text || busy) return;
     busy = true; q.value = "";
+    const mySession = session;  // "Start over" mid-answer must not leak into the new chat (review #6)
     add("user", esc(text));
     history.push({ role: "user", content: text });
     const bubble = add("", '<span style="color:#666">Writing an answer…</span>');
-    let answer = "", meta = {}, route = {}, failed = false;
+    let answer = "", route = {}, failed = false, finished = false;
+
+    // Runs as soon as the answer is complete (the "done" event), not when the stream closes:
+    // the server saves the transcript after "done", and the visitor shouldn't wait for it (review #3).
+    function finish(meta) {
+      if (finished) return;
+      finished = true;
+      if (mySession !== session) return;
+      if (!failed && answer.trim()) {
+        history.push({ role: "assistant", content: answer.trim() });
+        announce("Cadence: " + answer.trim());
+        const cost = meta.cost_usd != null ? "$" + Number(meta.cost_usd).toFixed(5) : "n/a";
+        note(`topic: ${esc(route.topic || "n/a")} (${esc(route.router || "n/a")})<br>model: ${esc(meta.model || "n/a")} · ${meta.latency_ms ?? "?"} ms · ${cost}${meta.handoff ? "<br>handoff: yes" : ""}`);
+        if (meta.handoff) showHandoff();
+      } else {
+        if (!failed) { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(FALLBACK_MSG); }  // never stuck (review #1)
+        announce(bubble.textContent);
+      }
+      busy = false;
+      if (!document.querySelector("form.handoff:last-child")) q.focus();  // the form keeps focus
+    }
+
     try {
       const resp = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session, messages: history }) });
+        body: JSON.stringify({ session_id: session, messages: history.slice(-8) }) });
       if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
       const reader = resp.body.getReader(), dec = new TextDecoder();
       let buf = "";
@@ -225,11 +249,12 @@
         let cut;
         while ((cut = buf.indexOf("\n\n")) >= 0) {
           const block = buf.slice(0, cut); buf = buf.slice(cut + 2);
+          if (mySession !== session) continue;
           const ev = (block.match(/^event: (.*)$/m) || [])[1];
           const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
           if (ev === "token") { answer += data.text; bubble.innerHTML = render(answer); log.scrollTop = log.scrollHeight; }
           else if (ev === "route") { route = data; lastTopic = data.topic || ""; }
-          else if (ev === "done") meta = data;
+          else if (ev === "done") finish(data);
           else if (ev === "error") { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(data.message); }
         }
       }
@@ -237,17 +262,8 @@
       failed = true; bubble.className = "msg error";
       bubble.innerHTML = render("Sorry, I couldn't connect just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.");
     }
-    if (!failed && answer.trim()) {
-      history.push({ role: "assistant", content: answer.trim() });
-      announce("Cadence: " + answer.trim());
-      const cost = meta.cost_usd != null ? "$" + Number(meta.cost_usd).toFixed(5) : "n/a";
-      note(`topic: ${esc(route.topic || "n/a")} (${esc(route.router || "n/a")})<br>model: ${esc(meta.model || "n/a")} · ${meta.latency_ms ?? "?"} ms · ${cost}${meta.handoff ? "<br>handoff: yes" : ""}`);
-      if (meta.handoff) showHandoff();
-    } else {
-      announce(bubble.textContent);
-    }
-    busy = false;
-    if (!document.querySelector("form.handoff:last-child")) q.focus();  // the form keeps focus
+    finish({});  // no-op if "done" already arrived; otherwise shows the fallback instead of hanging
+    if (mySession !== session) busy = false;
   }
 
   function open() { panel.hidden = false; launcher.setAttribute("aria-expanded", "true"); if (!log.children.length) welcome(); q.focus(); }
@@ -256,7 +272,7 @@
   launcher.onclick = () => (panel.hidden ? open() : close());
   $("close").onclick = close;
   panel.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-  $("restart").onclick = () => { history = []; session = crypto.randomUUID(); welcome(); q.focus(); };
+  $("restart").onclick = () => { history = []; session = crypto.randomUUID(); busy = false; welcome(); q.focus(); };
   $("ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
   $("human").onclick = () => { add("user", "Talk to a strategist"); lastTopic = lastTopic || "booking"; showHandoff(); };
   $("bts").onchange = (e) => { showBts = e.target.checked; document.querySelectorAll(".bts").forEach((n) => (n.hidden = !showBts)); };

@@ -50,3 +50,22 @@ def test_save_failure_never_raises(monkeypatch):
     _with_transport(monkeypatch, handler)
     assert asyncio.run(transcripts.save_turn({"session_id": "s-0000001",
                                               "user_message": "hi", "outcome": "answered"})) is False
+
+
+def test_short_phone_numbers_are_removed_but_dates_kept():
+    out = transcripts.redact("Call 555-0199 or 324-3223 x. Meeting 2026-09-23.")
+    assert out.count("[phone removed]") == 2 and "2026-09-23" in out
+
+
+def test_redaction_never_exceeds_column_limit(monkeypatch):
+    sent = {}
+
+    def handler(request):
+        sent["body"] = request.content.decode()
+        return httpx.Response(201)
+    _with_transport(monkeypatch, handler)
+    long = "a@b.co " * 150  # 1,050 chars that grow when redacted
+    asyncio.run(transcripts.save_turn({"session_id": "s-0000001", "user_message": long[:1000],
+                                       "outcome": "answered"}))
+    import json
+    assert len(json.loads(sent["body"])["user_message"]) <= 1000

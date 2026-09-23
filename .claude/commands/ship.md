@@ -1,0 +1,14 @@
+---
+description: Pre-commit gate - lint, tests, quote check, review, then propose a commit
+---
+Get the current changes ready to commit. Stop at the first failure and report it.
+
+1. `.venv/bin/ruff check .` and `.venv/bin/python -m pytest -q`: both must pass.
+2. If `knowledge/` changed: `.venv/bin/python tools/verify_knowledge.py` must pass.
+3. If `app/`, `prompts/`, or `knowledge/` changed: run `/eval --only` on the affected cases.
+4. Ask the `code-reviewer` subagent to review the diff (`git diff --cached` or `git diff`).
+   Fix critical/major findings, or explain why a finding is wrong.
+5. Scan the diff for secrets (`sk-or-v1-`, JWTs). Never commit `.env*`.
+6. Update `build-process.md` (did / found / decided / checked + "Say in the review").
+7. Show Brian a plain-English summary and the proposed commit message. **Commit only after
+   he approves.**

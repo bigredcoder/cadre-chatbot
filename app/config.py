@@ -35,6 +35,9 @@ ANSWER_TIMEOUT_S = 30
 MAX_MESSAGE_CHARS = 1000     # a single visitor message
 MAX_HISTORY_MESSAGES = 8     # only the recent turns are sent to the model
 MAX_TURNS_PER_SESSION = 30   # beyond this, point them to a person
+# Per visitor IP. ESTIMATE: well above human typing speed. Evals raise these (one "visitor").
+RATE_LIMIT_PER_MINUTE = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "12"))
+RATE_LIMIT_PER_DAY = int(os.environ.get("RATE_LIMIT_PER_DAY", "200"))
 
 # --- Routing (Jev via Vercel AI Gateway) ---
 JEV_URL = "https://ai-gateway.vercel.sh/v1/evaluate"

@@ -15,8 +15,9 @@ from app import config
 log = logging.getLogger("cadence.transcripts")
 
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
-# 10+ digit phone-like runs, with optional +, spaces, dots, dashes, parentheses
-PHONE = re.compile(r"(?<![\w(])\+?\(?\d[\d\s().-]{8,}\d(?!\w)")
+# Phone-like runs (optional +, spaces, dots, dashes, parentheses); judged by digit count below
+PHONE = re.compile(r"(?<![\w(])\+?\(?\d[\d\s().-]{5,}\d(?!\w)")
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 KEEP_EMAILS = {"hello@gocadre.ai"}   # Cadre's own published contact details
 KEEP_PHONE_DIGITS = {"6193243223"}
 
@@ -30,8 +31,10 @@ def redact(text: str | None) -> str | None:
         return m.group(0) if m.group(0).lower() in KEEP_EMAILS else "[email removed]"
 
     def phone(m: re.Match) -> str:
-        digits = re.sub(r"\D", "", m.group(0))[-10:]
-        return m.group(0) if digits in KEEP_PHONE_DIGITS else "[phone removed]"
+        text, digits = m.group(0), re.sub(r"\D", "", m.group(0))
+        if len(digits) < 7 or len(digits) > 15 or ISO_DATE.match(text.strip()):
+            return text                      # too short/long to be a phone, or a date
+        return text if digits[-10:] in KEEP_PHONE_DIGITS else "[phone removed]"
 
     return PHONE.sub(phone, EMAIL.sub(email, text))
 
@@ -40,8 +43,10 @@ async def save_turn(row: dict) -> bool:
     """Insert one turn. Returns True if saved. Never raises."""
     if not config.SAVE_TURNS:
         return False
-    row = {**row, "user_message": redact(row.get("user_message")),
-           "assistant_message": redact(row.get("assistant_message"))}
+    # Redaction can lengthen text ("a@b.co" → "[email removed]"): re-cap to the column limits
+    user, reply = redact(row.get("user_message")), redact(row.get("assistant_message"))
+    row = {**row, "user_message": user[:1000] if user else user,
+           "assistant_message": reply[:8000] if reply else reply}
     try:
         async with httpx.AsyncClient(timeout=config.SAVE_TIMEOUT_S) as client:
             resp = await client.post(
