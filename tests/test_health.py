@@ -13,4 +13,4 @@ def test_health_ok_and_never_reveals_key_values():
 
 def test_home_and_privacy_pages_serve():
     assert "Cadence" in client.get("/").text
-    assert "How chat data is used" in client.get("/privacy").text
+    assert "How chat data is used" in client.get("/privacy.html").text

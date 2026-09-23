@@ -154,13 +154,15 @@ def health() -> dict:
             "openrouter_key": bool(config.openrouter_key())}
 
 
+# Local dev only. On Vercel, files in public/ are served as static files and are NOT
+# bundled with this function, so these routes never run there (see CLAUDE.md gotchas).
 @app.get("/")
 def home() -> FileResponse:
     """The demo page with the chat bubble."""
     return FileResponse(config.ROOT / "public" / "index.html")
 
 
-@app.get("/privacy")
+@app.get("/privacy.html")
 def privacy() -> FileResponse:
     """What chat data we store (research findings #8)."""
     return FileResponse(config.ROOT / "public" / "privacy.html")

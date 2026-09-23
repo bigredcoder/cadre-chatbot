@@ -79,5 +79,8 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - "Ready" on Vercel doesn't mean the app runs. After every deploy, hit `/api/health`.
   The project's framework must be FastAPI (`vercel.json`), or Vercel serves only static files.
 - `.vercelignore` keeps `.env*` out of uploads. Never delete it.
+- Files in `public/` are served statically on Vercel and are NOT inside the Python
+  function. Link to `/page.html` directly; never `FileResponse` them from a route that only
+  exists in Python (that 500'd `/privacy` on 09-23).
 - Vercel reads files relative to the project root, not the module's folder.
 - OpenRouter returns usage/cost only when the request sets `"usage": {"include": true}`.

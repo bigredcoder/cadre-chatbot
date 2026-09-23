@@ -142,6 +142,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | First site scan said the 8 pillar names and security statements weren't public | They're on /strategy; the scan only read the homepage | Subagent read every services page | Knowledge updated; gaps list corrected |
 | 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
 | 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
+| 09-23 | `/privacy` route returning `FileResponse(public/privacy.html)` | Worked locally, 500 on Vercel: `public/` isn't bundled into the Python function | Post-deploy check of each page; traceback in `vercel logs` | Link to the static `/privacy.html`; gotcha added to CLAUDE.md |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 6a. Documentation tasks (for the review)

@@ -301,7 +301,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Phase 5: Handoff form + saved conversations · commit pending
+## 2026-09-23 · Phase 5: Handoff form + saved conversations · commit `4ec2e9c`
 **Did**
 - Supabase project `cadre-chatbot` (us-west-1, $10/month; Brian approved and deleted
   an unused project to offset it). Schema in `db/schema.sql`: one table, `chat_turns`,
@@ -332,3 +332,20 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
   `[email removed]`. Test rows deleted afterwards.
 
 **Say in the review:** "Conversations are saved so we can improve, but redacted before they leave the app, deleted after 30 days, and the website's key can only write, never read. I tested that it gets a 401."
+
+---
+
+## 2026-09-23 · Phase 5 verified live, and one bug found
+**Checked** (on https://cadre-chatbot-xi.vercel.app)
+- "Can someone call me? My number is 858-555-0199" → `booking` 0.92 via Jev, asks for a
+  person, handoff. Stored in Supabase as "My number is [phone removed]". Test row deleted.
+- `/api/leads` live: an invalid email is rejected; a valid submit gives the honest demo message.
+
+**Found**
+- **`/privacy` returned a 500 in production** (it worked locally). `vercel logs` showed
+  `FileNotFoundError: /var/task/public/privacy.html`: Vercel serves `public/` as static
+  files and doesn't bundle them into the Python function. → The widget now links to the
+  static `/privacy.html`; the Python route is renamed to match for local dev; a gotcha is
+  added to CLAUDE.md and an entry to the AI-bug log.
+
+**Say in the review:** "Everything passed locally, but I checked every page after deploying and found the privacy page 500'ing in production. The logs showed why in one line: static files aren't in the Python bundle on Vercel."
