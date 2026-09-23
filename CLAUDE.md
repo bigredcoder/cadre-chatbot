@@ -53,12 +53,18 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
 - When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
 
-## Commands
-- Run locally: `uvicorn app.main:app --reload` (then open http://localhost:8000)
-- Unit tests: `pytest -q`
-- Answer-quality tests: `python -m evals.run` (costs a few cents; uses the configured model)
-- Lint: `ruff check .`
+## Commands (always use the project venv: `.venv/bin/...`)
+- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn`
+  (don't `pip install -e .`: the repo isn't laid out as a package, and it fails)
+- Run locally: `.venv/bin/uvicorn app.main:app --reload` (then open http://localhost:8000)
+- Unit tests: `.venv/bin/python -m pytest -q`
+- Answer-quality tests: `.venv/bin/python -m evals.run` (costs a few cents; uses the configured model)
+- Lint: `.venv/bin/ruff check .`
+- Deploy: push to `main` on GitHub (Vercel auto-deploys). Preview: `vercel deploy`
 
 ## Gotchas
+- "Ready" on Vercel doesn't mean the app runs. After every deploy, hit `/api/health`.
+  The project's framework must be FastAPI (`vercel.json`), or Vercel serves only static files.
+- `.vercelignore` keeps `.env*` out of uploads. Never delete it.
 - Vercel reads files relative to the project root, not the module's folder.
 - OpenRouter returns usage/cost only when the request sets `"usage": {"include": true}`.

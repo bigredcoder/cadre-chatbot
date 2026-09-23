@@ -62,14 +62,32 @@ It doesn't guess.
 ## 4. Phases
 Each phase: build → verify → explain → approve → commit.
 
-- [ ] **0. Foundation:** repo, CLAUDE.md, this plan, .gitignore
-- [ ] **1. Risk spikes + deploy early:** one Jev call from Python via AI Gateway; one OpenRouter call; "hello" page live on Vercel
+- [x] **0. Foundation:** repo, CLAUDE.md, this plan, .gitignore
+- [x] **1. Risk spikes + deploy early:** one Jev call from Python via AI Gateway; one OpenRouter call; "hello" page live on Vercel
 - [ ] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
 - [ ] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [ ] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
 - [ ] **5. Handoff + data:** Supabase schema, `/api/leads`, validation, event logging
 - [ ] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
 - [ ] **7. Harden + ship:** guards, reviewer pass, README, what's next, submit
+
+## 4a. Phase 1 findings (Jev spike, 2026-09-23)
+Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
+
+| Message | topic (choice) | p | needs_human (boolean) |
+|---|---|---|---|
+| "Do you guys work with construction companies?" | industries | 1.00 | 0.55 |
+| "How much does an engagement cost?" | pricing | 0.99 | 0.35 |
+| "What's the weather in San Diego?" | off_topic | 1.00 | 0.21 |
+
+- **Topic routing is strong.** Use Jev's `choice` for the topic.
+- **A vague "needs a human?" boolean is unreliable** (construction scored above pricing).
+  Decision: handoff = topic rule (pricing, security, portal login always offer a human) +
+  a sharper Jev boolean, "is the visitor explicitly asking for a person?", with `criteria`
+  defining true and false. Re-measure in Phase 6.
+- Auth works with the Vercel OIDC token locally; AI Gateway requires a card on file.
+- OpenRouter (Brian's dev key): gemini-2.5-flash-lite and gpt-4.1-nano answered; gpt-5-nano returned blank (reasoning ate the token budget).
+- Live: https://cadre-chatbot-xi.vercel.app. `/api/health` returns ok.
 
 ## 5. Model comparison
 *(filled in during Phase 6)*
@@ -85,6 +103,8 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | Advised against Jev: "limited early access, not on OpenRouter" | Jev is generally available on Vercel AI Gateway | Brian found it in one search | Adopted Jev with a fallback; rule: research access paths before objecting |
 | 09-23 | Stated website facts from a summarizer tool as fact | Unverified | Brian asked for the source | Re-read cadre.ai directly; every fact now cites a URL |
 | 09-23 | UI prototype | Unreadable form fields and faint text | Brian reviewed it | Fixed contrast, tested at desktop and phone size before resharing |
+| 09-23 | Jev routing design assumed one "needs a human?" question would work | Scores were fuzzy and inverted (pricing < construction) | Measured it in the Phase 1 spike before building | Topic-rule handoff + a sharper, criteria-defined Jev question |
+| 09-23 | First deploy "succeeded" | Vercel served only static files; the Python app never ran (/api/health 404) | Checked the health endpoint, not just "Ready" | Set `"framework": "fastapi"` in vercel.json; added a .vercelignore so secrets are never uploaded |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 7. What's next (with more time)

@@ -1,0 +1,9 @@
+# Never upload secrets or local-only folders
+.env
+.env.*
+.venv/
+spikes/
+tests/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
