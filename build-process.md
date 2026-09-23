@@ -485,7 +485,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Phase 7: Harden, review, document, test · commit pending
+## 2026-09-23 · Phase 7: Harden, review, document, test · commit `3b251ad`
 **Did**
 - **Safety limits:** `app/guards.py`: 12 messages/minute and 200/day per visitor IP, with a
   friendly message when limited. Honest limit: in-memory per serverless instance (stops
@@ -515,3 +515,44 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
   it offered login help with the form. Logged as a known issue, not hidden.
 
 **Say in the review:** "Before submitting I had a reviewer subagent audit the code. It found a way the chat could hang on 'Writing an answer…' forever. I verified every finding before fixing it, and each fix has a test."
+
+**Live checks after deploying Phase 7**
+- Browser tests against https://cadre-chatbot-xi.vercel.app: **6/6 pass**.
+- Load test (`tools/load_test.py`, log in `evals/results/load-test.log`):
+  - 10 simultaneous visitors: **10/10 answered**, first words in 2.2 s (median) / 2.5 s (p90),
+    full answer in 2.8 s / 3.2 s; all 10 routed by Jev, no fallbacks.
+  - A 25-message burst from one visitor: all 25 answered, 0 server errors, and **0 were
+    rate-limited**. Vercel spread the burst across several instances, and each in-memory
+    counter stayed under 12. This proves the limitation documented in `guards.py`. The fix
+    for real traffic is a shared limit (Vercel firewall rate-limiting rules, or a shared store).
+
+**Say in the review:** "The load test proved my own rate limiter is per-instance: a 25-message burst sailed through. I'd documented that limit in the code before testing it, and the production fix is a firewall-level rule."
+
+---
+
+## 2026-09-23 · Smoother widget motion (Brian: "very harsh when presenting data") · commit pending
+**Did**
+- The panel eases open and closed (fade + slight rise; `hidden` is still set after closing,
+  for screen readers).
+- Messages, chips, the form, and the confirmation rise in gently instead of popping.
+- "Writing an answer…" text → three pulsing typing dots (labeled for screen readers).
+- Streaming text is painted once per screen refresh (requestAnimationFrame), not once per
+  token, so it flows instead of jittering.
+- Scrolling glides to new content, and **doesn't yank** a visitor who scrolled up to read.
+- Buttons get subtle hover and press feedback.
+- Everything respects the device's "reduce motion" setting (WCAG; research findings #6).
+
+**Found (by the browser tests)**
+- **Focus bug:** closing the chat while an answer was finishing let the answer (or its
+  handoff form) pull keyboard focus back into the closed chat. Fixed: focus only returns
+  if the chat is still open.
+- The phone test measured the panel mid-animation (98.5% scale) → the test now waits for
+  the animation to finish (a test-timing fix, not a product change).
+- The "flaky" test was the rate limiter: repeated local runs exceed 12 messages/minute from
+  one machine. Local test servers now start with a raised limit (documented in the test file).
+
+**Checked**
+- Browser tests locally: **6/6, five runs in a row**. 50/50 unit tests. Visual check: the
+  panel animates (opacity 0.91 mid-open → 1), typing dots show, messages use the rise animation.
+
+**Say in the review:** "Smoothing the UI wasn't only cosmetic. The browser tests caught that the new timing let a finishing answer steal focus from a closed chat, a keyboard-accessibility bug I'd never have seen by eye."

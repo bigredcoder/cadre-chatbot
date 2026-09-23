@@ -273,7 +273,8 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   already records it).
 - Reasoning models (GPT-5 family): test with reasoning effort set to minimal and a larger token budget.
 - **Rate limiting that holds across instances:** move `guards.py` counters to a shared store
-  (or Vercel firewall rules). Today's in-memory limiter stops scripts, not a distributed attack.
+  (or Vercel firewall rules). **Proven necessary 09-23:** a 25-message burst from one visitor
+  spread across instances and none was limited (`evals/results/load-test.log`).
 - **Real lead capture:** replace the demo form with a `leads` table (insert-only) plus a CRM
   sync (schema sketched in `db/schema.sql`); measure qualified meetings, not form fills.
 - **One-line embed for cadre.ai:** a `<script>` tag that loads the widget on any page.

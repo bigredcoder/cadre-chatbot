@@ -3,6 +3,8 @@
 Runs against the LIVE site by default (real Jev, real model: a few cents per run):
   .venv/bin/python -m pytest e2e -q
 Against local:  BASE_URL=http://localhost:8000 .venv/bin/python -m pytest e2e -q
+  (start the local server with RATE_LIMIT_PER_MINUTE=1000: repeated runs from one machine
+   otherwise hit the per-visitor limit, 12 messages/minute, and answers time out)
 Not part of the default `pytest` run (unit tests live in tests/).
 """
 import os
@@ -74,7 +76,9 @@ def test_phone_size_panel_fills_screen_and_input_is_usable(browser):
     page = ctx.new_page()
     page.goto(BASE)
     page.get_by_role("button", name="Ask Cadre's AI").click()
-    box = page.get_by_role("dialog").bounding_box()
+    expect(page.get_by_role("dialog")).to_have_class(re.compile(r"\bopen\b"))
+    page.wait_for_function("getComputedStyle(document.getElementById('panel')).transform === 'none'")
+    box = page.get_by_role("dialog").bounding_box()  # measured after the open animation
     assert box["width"] >= 370, f"panel should fill a phone screen, got {box['width']}px"
     expect(page.locator("#q")).to_be_in_viewport()
     expect(page.get_by_role("button", name="Talk to a strategist")).to_be_in_viewport()

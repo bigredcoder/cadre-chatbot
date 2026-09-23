@@ -29,6 +29,20 @@
 
   #panel { position:fixed; right:20px; bottom:84px; width:390px; max-width:calc(100vw - 24px); height:min(620px, calc(100vh - 110px)); background:#fff; border:1px solid #e5e2da; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.10); z-index:20; }
   #panel[hidden] { display:none; }
+  /* Smooth motion (Brian, 09-23): panel eases open, messages rise in, typing dots pulse */
+  #panel { opacity:0; transform:translateY(14px) scale(.985); transform-origin:bottom right;
+           transition:opacity .22s ease, transform .26s cubic-bezier(.2,.8,.2,1); }
+  #panel.open { opacity:1; transform:none; }
+  #launcher { transition:transform .18s ease, background-color .18s ease; }
+  #launcher:hover { transform:translateY(-1px); }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .msg, .chips, .bts, .handoff { animation:rise .32s cubic-bezier(.2,.8,.2,1) both; }
+  .chip, .send, .human, .iconbtn, .handoff .submit { transition:background-color .15s ease, border-color .15s ease, color .15s ease, transform .1s ease; }
+  .chip:active, .send:active, .human:active, .handoff .submit:active { transform:scale(.97); }
+  .typing { display:inline-flex; gap:4px; padding:4px 2px; }
+  .typing span { width:6px; height:6px; border-radius:50%; background:#9a948a; animation:pulse 1.2s ease-in-out infinite; }
+  .typing span:nth-child(2) { animation-delay:.15s; } .typing span:nth-child(3) { animation-delay:.3s; }
+  @keyframes pulse { 0%, 80%, 100% { opacity:.25; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
   .ph { padding:12px 14px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; }
   .ph .t { flex:1; min-width:0; }
   .ph .t strong { display:block; font-family:'Inter Tight',Arial,sans-serif; font-size:15px; }
@@ -63,7 +77,7 @@
   .human { background:var(--ink); color:#fff; border:none; border-radius:36px; padding:6px 12px; font:500 12px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
   .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
   @media (max-width:480px) { #panel { right:0; bottom:0; width:100vw; max-width:none; height:100dvh; border-radius:0; } #launcher[aria-expanded="true"] { display:none; } }
-  @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; scroll-behavior:auto !important; } #panel { opacity:1; transform:none; } .typing span { opacity:.7; } }
 </style>
 </head>
 <body>
@@ -143,15 +157,21 @@
     return (inList ? html + "</ul>" : html).trim();
   }
 
+  const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Follow new content only if the visitor is already near the bottom (don't yank readers)
+  function stick(smooth = true) {
+    const near = log.scrollHeight - log.scrollTop - log.clientHeight < 140;
+    if (near) log.scrollTo({ top: log.scrollHeight, behavior: smooth && !REDUCED ? "smooth" : "auto" });
+  }
   function add(cls, html) {
     const d = document.createElement("div");
     d.className = "msg " + cls; d.innerHTML = html;
-    log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+    log.appendChild(d); stick(); return d;
   }
   function note(html) {
     const d = document.createElement("div");
     d.className = "bts"; d.innerHTML = html; d.hidden = !showBts;
-    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    log.appendChild(d); stick();
   }
   function announce(text) { $("announce").textContent = ""; setTimeout(() => $("announce").textContent = text, 50); }
 
@@ -200,8 +220,8 @@
         err.hidden = false; btn.disabled = false; btn.textContent = "Send to the team";
       }
     };
-    log.appendChild(d); log.scrollTop = log.scrollHeight;
-    d.querySelector(`#${id}n`).focus();
+    log.appendChild(d); stick();
+    if (panel.classList.contains("open")) d.querySelector(`#${id}n`).focus();  // never pull focus into a closed chat
   }
 
   const FALLBACK_MSG = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
@@ -213,7 +233,9 @@
     const mySession = session;  // "Start over" mid-answer must not leak into the new chat (review #6)
     add("user", esc(text));
     history.push({ role: "user", content: text });
-    const bubble = add("", '<span style="color:#666">Writing an answer…</span>');
+    const bubble = add("", '<span class="typing" role="img" aria-label="Writing an answer"><span></span><span></span><span></span></span>');
+    let frame = 0;  // stream updates are painted once per screen refresh, not per token
+    const paint = () => { frame = 0; bubble.innerHTML = render(answer); stick(false); };
     let answer = "", route = {}, failed = false, finished = false;
 
     // Runs as soon as the answer is complete (the "done" event), not when the stream closes:
@@ -233,7 +255,9 @@
         announce(bubble.textContent);
       }
       busy = false;
-      if (!document.querySelector("form.handoff:last-child")) q.focus();  // the form keeps focus
+      // Refocus the input only if the chat is still open and no form needs focus
+      // (a visitor who closed the chat mid-answer keeps focus on the launcher)
+      if (panel.classList.contains("open") && !document.querySelector("form.handoff:last-child")) q.focus();
     }
 
     try {
@@ -252,9 +276,9 @@
           if (mySession !== session) continue;
           const ev = (block.match(/^event: (.*)$/m) || [])[1];
           const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
-          if (ev === "token") { answer += data.text; bubble.innerHTML = render(answer); log.scrollTop = log.scrollHeight; }
+          if (ev === "token") { answer += data.text; if (!frame) frame = requestAnimationFrame(paint); }
           else if (ev === "route") { route = data; lastTopic = data.topic || ""; }
-          else if (ev === "done") finish(data);
+          else if (ev === "done") { if (frame) { cancelAnimationFrame(frame); paint(); } finish(data); }
           else if (ev === "error") { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(data.message); }
         }
       }
@@ -266,10 +290,18 @@
     if (mySession !== session) busy = false;
   }
 
-  function open() { panel.hidden = false; launcher.setAttribute("aria-expanded", "true"); if (!log.children.length) welcome(); q.focus(); }
-  function close() { panel.hidden = true; launcher.setAttribute("aria-expanded", "false"); launcher.focus(); }
+  function open() {
+    panel.hidden = false; launcher.setAttribute("aria-expanded", "true");
+    if (!log.children.length) welcome();
+    requestAnimationFrame(() => panel.classList.add("open"));  // next frame, so it animates
+    q.focus();
+  }
+  function close() {
+    panel.classList.remove("open"); launcher.setAttribute("aria-expanded", "false"); launcher.focus();
+    setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, REDUCED ? 0 : 240);
+  }
 
-  launcher.onclick = () => (panel.hidden ? open() : close());
+  launcher.onclick = () => (panel.classList.contains("open") ? close() : open());
   $("close").onclick = close;
   panel.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
   $("restart").onclick = () => { history = []; session = crypto.randomUUID(); busy = false; welcome(); q.focus(); };
