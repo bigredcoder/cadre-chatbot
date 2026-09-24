@@ -674,7 +674,7 @@ and never judged it as a visitor would.
 
 **Say in the review:** "Before submitting, I had Claude audit the repo as a skeptical reviewer. It found a UI freeze, card numbers stored in clear, and docs that had drifted from the code. I fixed each one with a regression test."
 
-**09-24 · Toward 90: provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit _pending_
+**09-24 · Toward 90: provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit `899d1b4`
 - **Personal details never reach the model providers:** emails, phones, and card numbers are now
   redacted before routing and answering, not just before saving (`app/chat.py`).
 - **Shared rate limit:** Vercel firewall rule, 20 POSTs/min per IP on `/api/`, across all
