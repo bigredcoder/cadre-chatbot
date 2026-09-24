@@ -633,7 +633,7 @@ and never judged it as a visitor would.
   a button, not a dropdown"). The ••• menu keeps Talk to a strategist and Behind the scenes.
   Header checked at iPhone and desktop widths, no overflow; browser tests 9/9.
 
-**09-24 · Needless strategist offers and source formatting (Brian's feedback)** · commit _pending_
+**09-24 · Needless strategist offers and source formatting (Brian's feedback)** · commit `b907b01`
 - **Found:** 8 of 26 eval answers ended with "Would you like to talk to an AI strategist?"
   after fully answering. Cause: the prompt's "one next step" rule plus an example that ended
   that way. Separately, the model's own handoff tag sometimes fired after a complete answer
