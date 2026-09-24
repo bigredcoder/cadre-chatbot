@@ -89,18 +89,15 @@ def test_start_over_clears_the_conversation(page: Page):
     open_chat(page)
     ask(page, "Do you work with hotels?")
     expect(page.locator(LAST_ANSWER)).to_contain_text("hospitality", timeout=ANSWER)
-    page.get_by_role("button", name="More options").click()
-    page.get_by_role("menuitem", name="Start a new chat").click()
+    page.get_by_role("button", name="Start a new chat").click()
     expect(page.locator("deep-chat .cad-msg")).to_have_count(1)            # just the greeting
     expect(page.locator("deep-chat .cad-starters:not(.cad-gone)")).to_have_count(1)
 
 
 def test_privacy_page_matches_storage(page: Page):
-    open_chat(page)
-    page.get_by_role("button", name="More options").click()
-    with page.expect_popup() as popup:
-        page.get_by_role("menuitem", name="How chat data is used").click()
-    expect(popup.value.locator("body")).to_contain_text("redacted, for 30 days")
+    # No longer linked from the widget (Brian, 09-24); the page stays accurate at /privacy.html
+    page.goto(BASE + "/privacy.html")
+    expect(page.locator("body")).to_contain_text("redacted, for 30 days")
 
 
 # ---------------- iPhone profile (WebKit = Safari's engine) ----------------

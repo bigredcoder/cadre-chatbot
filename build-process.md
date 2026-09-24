@@ -611,7 +611,7 @@ and never judged it as a visitor would.
 
 **Say in the review:** "For the UI, I benchmarked against a production widget, Chatbase, instead of designing from scratch, and kept every rule of my own: grounded answers, the handoff, and the privacy notice."
 
-**Brian's iPhone round 2 (09-23): three fixes**
+**Brian's iPhone round 2 (09-23): three fixes · commit `78c8ad9`**
 - **The keyboard covered the form.** The form (and the chat on open) moved focus into a field
   by itself, which pops the iOS keyboard, and Safari doesn't shrink the page for the keyboard.
   → On touch devices nothing auto-focuses; the phone panel is sized to `visualViewport`
@@ -625,3 +625,10 @@ and never judged it as a visitor would.
 - Browser suite: 9/9 (3 iPhone tests).
 
 **Say in the review:** "Real-device testing found what emulation didn't: auto-focus pops the iOS keyboard over the form. I fixed it and added a test that simulates the keyboard, so it can't come back."
+
+**09-24 · Privacy link removed from the menu (Brian's call)** · commit pending
+- The "How chat data is used" menu item is gone; `/privacy.html` still exists and stays
+  accurate. The trade-off against the research's privacy-note guidance is logged in `plan.md` §6b.
+- **"Start a new chat" is now a visible "+ New chat" button** in the header (Brian: "should be
+  a button, not a dropdown"). The ••• menu keeps Talk to a strategist and Behind the scenes.
+  Header checked at iPhone and desktop widths, no overflow; browser tests 9/9.

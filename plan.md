@@ -265,6 +265,12 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   data. Easy to run: `route()` already has both paths; add a flag to force the fallback.
   Do it in Phase 6 alongside the model comparison. Not started.
 
+## 6b. Changed by Brian after device testing (09-24)
+- The privacy banner (09-23) and the "How chat data is used" menu link (09-24) were removed at
+  Brian's request. Trade-off: the research recommends a short privacy note in the chat
+  (findings #8). The `/privacy.html` page still exists and is accurate; in production it would
+  be linked from the site footer or the chat.
+
 ## 7. What's next (with more time)
 - **Jev usage tier (Brian, 09-23):** Jev returned HTTP 429 (rate limited) on ~20% of calls in
   sequential testing. For production traffic, move to a paid or higher AI Gateway tier. The
