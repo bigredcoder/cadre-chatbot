@@ -20,7 +20,6 @@
   /* ---- Demo page ---- */
   header { padding:20px 24px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
   .wordmark { font-family:Poppins,Inter,sans-serif; font-size:20px; font-weight:500; white-space:nowrap; }
-  .demo-note { font-size:13px; color:var(--sub); }
   main { max-width:720px; margin:56px auto; padding:0 24px; text-align:center; }
   .badge { display:inline-flex; gap:6px; align-items:center; background:#fff; border-radius:36px; padding:3px 10px 3px 3px; font-size:13px; }
   .badge b { background:var(--red); color:#fff; border-radius:36px; padding:2px 8px; font-weight:500; }
@@ -81,7 +80,6 @@
   /* ---- Phone: full-screen sheet that slides up; nothing wider than the screen ---- */
   @media (max-width:520px) {
     header { flex-direction:column; align-items:flex-start; gap:4px; padding:16px 16px 0; }
-    .demo-note { font-size:12px; }
     main { margin:36px auto; padding:0 16px; }
     #launcher { right:16px; }
     #launcher.is-open { display:none; }
@@ -96,7 +94,6 @@
 <a class="skip" href="#launcher">Skip to the Cadre AI assistant</a>
 <header>
   <span class="wordmark">Cadre AI</span>
-  <span class="demo-note">Take-home demo, not the official Cadre site · <a href="https://cadre.ai">cadre.ai</a></span>
 </header>
 <main>
   <span class="badge"><b>Cadre AI</b>Support assistant demo</span>

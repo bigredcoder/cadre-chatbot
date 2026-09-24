@@ -705,3 +705,8 @@ and never judged it as a visitor would.
 - **Checked:** 62 unit, 10 browser (local), evals 26/26, topic and handoff accuracy 100%.
 
 **Say in the review:** "The model can't see the UI, so I tell it what the visitor will see under its reply. The text and the screen always agree, which is a small thing that makes it feel like a real product."
+
+**09-24 · Landing page: removed the "not the official Cadre site" line (Brian's call)** · commit _pending_
+- The header now shows only the wordmark. The page still says "Support assistant demo", the
+  handoff form says "Demo: nothing is sent", and `/privacy.html` says it's a take-home demo.
+- Checked: desktop and iPhone screenshots, browser tests 10/10 (local).
