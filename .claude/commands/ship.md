@@ -3,7 +3,8 @@ description: Pre-commit gate - lint, tests, quote check, review, then propose a 
 ---
 Get the current changes ready to commit. Stop at the first failure and report it.
 
-1. `.venv/bin/ruff check .` and `.venv/bin/python -m pytest -q`: both must pass.
+1. `.venv/bin/ruff check .`, `.venv/bin/python -m mypy app`, and `.venv/bin/python -m pytest -q`:
+   all must pass.
 2. If `knowledge/` changed: `.venv/bin/python tools/verify_knowledge.py` must pass.
 3. If `app/`, `prompts/`, or `knowledge/` changed: run `/eval --only` on the affected cases.
 4. Ask the `code-reviewer` subagent to review the diff (`git diff --cached` or `git diff`).

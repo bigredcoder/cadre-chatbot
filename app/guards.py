@@ -2,7 +2,14 @@
 
 A per-visitor rate limit: 12 messages a minute and 200 a day per IP address.
 
-Honest limitation: this counter lives in memory, so each warm serverless instance counts
+Two layers:
+1. Vercel's firewall (set 09-24, rule "Chat API rate limit per IP"): 20 POSTs a minute per IP
+   on /api/, counted across ALL instances. It's a project setting, NOT in this repo: a new
+   deployment must recreate it (README → Deploy). Over it, Vercel answers 429 before the app runs, and
+   the widget says to slow down. Verified live: request 21 got 429.
+2. This module: a friendlier 12/minute and 200/day inside each instance.
+
+Limitation of layer 2: this counter lives in memory, so each warm serverless instance counts
 separately and a cold start resets it. It stops a casual script or a stuck retry loop, not a
 determined attacker. The hard ceilings are the model key's own spend limit and the server-side
 caps in main.py/config.py (message length, 8 messages of history, max tokens per reply, and

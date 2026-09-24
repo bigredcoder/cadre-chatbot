@@ -96,6 +96,15 @@ def test_start_over_clears_the_conversation(page: Page):
     expect(page.locator("deep-chat .cad-starters:not(.cad-gone)")).to_have_count(1)
 
 
+def test_firewall_rate_limit_says_slow_down_not_sorry(page: Page):
+    # Vercel's firewall answers 429 before the app runs; simulate it (no need to flood the site)
+    page.route("**/api/chat", lambda r: r.fulfill(status=429, body="Too Many Requests"))
+    open_chat(page)
+    ask(page, "What does Cadre do?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("sending messages quickly")
+    expect(page.locator(INPUT)).to_be_editable()                              # input released
+
+
 def test_privacy_page_matches_storage(page: Page):
     # No longer linked from the widget (Brian, 09-24); the page stays accurate at /privacy.html
     page.goto(BASE + "/privacy.html")

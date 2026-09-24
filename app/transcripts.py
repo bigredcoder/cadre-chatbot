@@ -25,6 +25,19 @@ KEEP_EMAILS = {"hello@gocadre.ai"}   # Cadre's own published contact details
 KEEP_PHONE_DIGITS = {"6193243223"}
 
 
+def _phone_shaped(text: str, digits: str) -> bool:
+    """True if a digit run is grouped the way phone numbers are (/ship review, 09-24: digit count
+    alone turned a budget of "25000-50000" into "[phone removed]" before it reached the model).
+    - grouped by spaces, dots, dashes or parentheses: every group is 1-4 digits
+      ("858-555-0199", "+44 20 7946 0958" yes; "25000-50000" no)
+    - one bare run of digits: 10 or more ("6195550134" yes; "1200000" no)
+    """
+    groups = [g for g in re.split(r"\D+", text) if g]
+    if len(groups) > 1:
+        return all(len(g) <= 4 for g in groups)
+    return len(digits) >= 10
+
+
 def redact(text: str | None) -> str | None:
     """Replace personal emails, card-like numbers, and phone numbers; keep Cadre's contact info."""
     if text is None:
@@ -35,8 +48,9 @@ def redact(text: str | None) -> str | None:
 
     def phone(m: re.Match) -> str:
         text, digits = m.group(0), re.sub(r"\D", "", m.group(0))
-        if len(digits) < 7 or len(digits) > 15 or ISO_DATE.match(text.strip()):
-            return text                      # too short/long to be a phone, or a date
+        if (len(digits) < 7 or len(digits) > 15 or ISO_DATE.match(text.strip())
+                or not _phone_shaped(text, digits)):
+            return text                      # too short/long, a date, or not shaped like a phone
         return text if digits[-10:] in KEEP_PHONE_DIGITS else "[phone removed]"
 
     return PHONE.sub(phone, CARD.sub("[number removed]", EMAIL.sub(email, text)))

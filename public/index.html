@@ -140,6 +140,7 @@
   const SUBJECTS = { pricing: "Pricing question", booking: "Talk to an AI strategist", portal: "Client portal help",
     maturity_index: "AI Maturity Index", llm_security: "Data security question", industries: "Industry fit",
     services: "Services question", results: "Case studies", company: "About Cadre" };
+  const SLOW_DOWN = "You're sending messages quickly. Please wait a minute, or reach the team at hello@gocadre.ai.";
   const FALLBACK = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
   let session = crypto.randomUUID(), history = [], lastTopic = "", lastQuestion = "";
   let inflight = null, abortCtl = null;  // the answer currently streaming, so "Start over" can cancel it
@@ -241,7 +242,8 @@
         abortCtl = new AbortController();
         const resp = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: session, messages: history.slice(-8) }), signal: abortCtl.signal });
-        if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+        // 429 = Vercel firewall's shared per-IP limit (guards.py): say "slow down", not "sorry"
+        if (!resp.ok || !resp.body) throw new Error(resp.status === 429 ? "slow" : "HTTP " + resp.status);
         const reader = resp.body.getReader(), dec = new TextDecoder();
         let buf = "";
         for (;;) {
@@ -262,7 +264,7 @@
         }
         if (!meta && !failed) { failed = true; if (!received) received = FALLBACK; reveal(); }
       } catch (e) {
-        failed = true; received = FALLBACK; shown = 0; reveal();
+        failed = true; received = e.message === "slow" ? SLOW_DOWN : FALLBACK; shown = 0; reveal();
       }
       await done;
       try {

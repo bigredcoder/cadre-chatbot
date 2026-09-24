@@ -1,4 +1,4 @@
-"""One chat turn, start to finish: route → answer → decide the handoff → save.
+"""One chat turn, start to finish: redact → route → answer → decide the handoff → save.
 
 main.py turns these events into Server-Sent Events; this module decides what to say.
 Every path ends in a reply the visitor can read: a canned answer, a streamed answer, or
@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from app import config
 from app.answer import AnswerError, stream_answer
 from app.router import Route, answered_fully, route
-from app.transcripts import save_turn
+from app.transcripts import redact, save_turn
 
 log = logging.getLogger("cadence")
 
@@ -59,6 +59,10 @@ async def _offer_after_answer(decision: Route, model_handoff: bool, question: st
 
 async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> AsyncIterator[tuple[str, dict]]:
     """Yield (event, data) pairs: route, token..., done; or error. Saves the turn at the end."""
+    # Personal details never reach the model providers (OpenRouter, Jev): the visitor's
+    # messages are redacted before routing and answering, the same way they are before saving
+    history = [{**m, "content": redact(m["content"]) or ""} if m["role"] == "user" else m
+               for m in history]
     latest = history[-1]
     turn = {"session_id": session_id, "user_message": latest["content"]}
     try:

@@ -76,3 +76,12 @@ def test_card_numbers_are_removed():
     for card in ("4111 1111 1111 1111", "4111-1111-1111-1111", "4111111111111111", "378282246310005"):
         assert transcripts.redact(f"my card is {card} thanks") == "my card is [number removed] thanks"
     assert transcripts.redact("call 619-555-0134") == "call [phone removed]"   # phones unchanged
+
+
+def test_budgets_and_revenue_are_not_mistaken_for_phones():
+    # /ship review 09-24: redaction now runs before the model, so this would have mangled
+    # pricing questions ("Our budget is [phone removed]")
+    for text in ("Our budget is 25000-50000", "We do 1200000 in revenue", "Team of 250-400 people"):
+        assert transcripts.redact(text) == text
+    for phone in ("858-555-0199", "555-0199", "(619) 555-0134", "+44 20 7946 0958", "6195550134"):
+        assert transcripts.redact(f"call {phone}") == "call [phone removed]", phone

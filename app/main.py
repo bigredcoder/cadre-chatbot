@@ -4,7 +4,8 @@ import re
 from typing import Literal
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -24,6 +25,20 @@ class ChatRequest(BaseModel):
     session_id: str = Field(min_length=8, max_length=64)
     # The client sends history; the server only accepts the recent turns (code review #2)
     messages: list[Message] = Field(min_length=1, max_length=config.MAX_HISTORY_MESSAGES)
+
+
+@app.exception_handler(RequestValidationError)
+async def bad_request(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Malformed requests get one plain sentence, not the framework's field-by-field dump.
+    (The widget never sends these; this is for anyone calling the API directly.)"""
+    fields = {str(err["loc"][-1]) for err in exc.errors() if err.get("loc")}
+    if "content" in fields:
+        message = "Each message needs text, and must be under the length limit."
+    elif "messages" in fields:
+        message = f"Send between 1 and {config.MAX_HISTORY_MESSAGES} messages."
+    else:
+        message = "That request wasn't in the expected format."
+    return JSONResponse(status_code=422, content={"error": message})
 
 
 def sse(event: str, data: dict) -> str:

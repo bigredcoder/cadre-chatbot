@@ -1,5 +1,7 @@
 # Cadence: a support chatbot for Cadre AI
 
+**Reviewing this?** Start with [`REVIEW-GUIDE.md`](REVIEW-GUIDE.md): one page, organized by scoring area.
+
 **Live:** https://cadre-chatbot-xi.vercel.app. Click **Ask Cadre's AI** (bottom right).
 Turn on **Behind the scenes** to see how each answer was routed, which model answered, the
 time it took, and what it cost.
@@ -16,8 +18,8 @@ Forward Deployed AI Engineer role.
   offers a strategist.
 - A handoff form with the same fields as cadre.ai/contact, prefilled from the conversation.
   **Demo only:** it validates and confirms, and sends and stores nothing (the confirmation says so).
-- Saves conversations for quality review: **redacted** (emails and phone numbers removed
-  before saving), **deleted after 30 days**, and the site's key can only write, never read.
+- Saves conversations for quality review: **redacted** (emails, phone and card numbers removed
+  before saving, and before anything reaches a model provider), **deleted after 30 days**, and the site's key can only write, never read.
 
 ## How it works
 ```
@@ -46,19 +48,27 @@ Details: `docs/jev-routing.md` (routing), `db/schema.sql` (data), `plan.md` (dec
 
 ## Run it locally
 ```bash
-python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright
+python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright mypy
 cp .env.example .env            # add your OPENROUTER_API_KEY
 vercel link && vercel env pull  # optional: Jev auth via a Vercel OIDC token in .env.local
 .venv/bin/uvicorn app.main:app --reload    # http://localhost:8000
 ```
 Without a Jev credential, routing falls back to the chat model automatically.
 
+## Deploy
+1. Import the repo into Vercel (the framework is set to FastAPI in `vercel.json`).
+2. Set `OPENROUTER_API_KEY` in the project's environment. Jev authenticates with Vercel's own
+   per-request token, so it needs no key.
+3. Recreate the firewall rule, which is a project setting and not part of the repo:
+   `vercel firewall rules add "Chat API rate limit per IP" --condition '{"type":"path","op":"pre","value":"/api/"}' --condition '{"type":"method","op":"eq","value":"POST"}' --action rate_limit --rate-limit-window 60 --rate-limit-requests 20 --rate-limit-keys ip --yes && vercel firewall publish --yes`
+4. Check `/api/health` after the deploy ("Ready" alone doesn't prove the app runs).
+
 ## Test it
 | Command | What it checks | Cost |
 |---|---|---|
-| `.venv/bin/python -m pytest -q` | 58 unit tests (Python + the widget's JS rendering), network faked | $0 |
-| `.venv/bin/python -m pytest e2e -q` | 9 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
-| `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site | ~$0.03 |
+| `.venv/bin/python -m pytest -q` | 61 unit tests (Python + the widget's JS rendering), network faked | $0 |
+| `.venv/bin/python -m pytest e2e -q` | 10 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
+| `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site (the burst now also trips the Vercel firewall rule) | ~$0.03 |
 | `.venv/bin/python tools/verify_knowledge.py` | Every knowledge quote still matches cadre.ai | $0 |
 | `.venv/bin/python -m evals.run --repeat 3` | 26 real questions, code-scored | ~$0.05 |
 | `.venv/bin/python -m evals.compare --routes evals/results/routes-jev.json` | The model comparison | ~$0.50 |
@@ -69,7 +79,7 @@ With Claude Code, one phase at a time, with each commit reviewed and approved.
 - `build-process.md`: what actually happened, step by step.
 - `.claude/agents/`: `site-researcher`, `eval-writer`, `code-reviewer` subagents.
 - `.claude/commands/`: `/eval`, `/add-knowledge`, `/ship`.
-- `.claude/hooks/pre_commit_gate.py`: blocks any commit if lint or unit tests fail.
+- `.claude/hooks/pre_commit_gate.py`: blocks any commit if lint, the type check, or unit tests fail.
 
 ## Running costs
 About **$10/month** fixed (Supabase) plus about **$0.001 per answer** (model + Jev); hosting

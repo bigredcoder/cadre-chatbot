@@ -673,3 +673,21 @@ and never judged it as a visitor would.
 - **Checked:** unit 58/58, browser 9/9 (local), evals 26/26 with topic and handoff accuracy 100%.
 
 **Say in the review:** "Before submitting, I had Claude audit the repo as a skeptical reviewer. It found a UI freeze, card numbers stored in clear, and docs that had drifted from the code. I fixed each one with a regression test."
+
+**09-24 · Toward 90: provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit _pending_
+- **Personal details never reach the model providers:** emails, phones, and card numbers are now
+  redacted before routing and answering, not just before saving (`app/chat.py`).
+- **Shared rate limit:** Vercel firewall rule, 20 POSTs/min per IP on `/api/`, across all
+  instances. Verified live: request 21 got HTTP 429. The widget says "slow down" (browser
+  test added). It's a project setting, so README → Deploy shows how to recreate it.
+- **Friendly errors:** a malformed API request gets one plain sentence, not the framework's dump.
+- **Type check:** mypy is clean and now part of the commit gate and `/ship`.
+- **`REVIEW-GUIDE.md`:** one page for reviewers, organized by scoring area, with known limits.
+- **A real `/ship` run** in a headless Claude Code session inside the repo
+  (`docs/claude-code-runs/2026-09-24-ship.md`). Its `code-reviewer` subagent **caught a bug
+  in this same change**: with redaction before the model, "Our budget is 25000-50000" reached
+  the model as "Our budget is [phone removed]". The fix judges phone *shape* (groups of 1–4
+  digits, or 10+ bare digits) instead of digit count, with a regression test.
+- **Checked:** ruff, mypy, 61 unit tests, 10 browser tests (local), evals 26/26.
+
+**Say in the review:** "My own /ship gate caught a bug I'd just introduced: redacting before the model would have mangled budget questions. That's why the gate includes a review step and not just tests: the evals had no numbers in them."

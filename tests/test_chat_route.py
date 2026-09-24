@@ -242,3 +242,33 @@ def test_slow_routing_times_out_and_still_answers(monkeypatch):
     monkeypatch.setattr(chat, "stream_answer", fake)
     body = _post([{"role": "user", "content": "What does Cadre do?"}]).text
     assert "routing timed out" in body and "Yes." in body
+
+
+def test_personal_details_never_reach_the_model(monkeypatch):
+    seen = {}
+
+    async def spy_route(history, token=None):
+        seen["route"] = history[-1]["content"]
+        return Route("booking", 0.95, "jev", True, True)
+
+    async def spy_answer(history, topic):
+        seen["answer"] = history[-1]["content"]
+        yield {"type": "token", "text": "A strategist can follow up."}
+        yield {"type": "done", "handoff": True, "model": "m"}
+    monkeypatch.setattr(chat, "route", spy_route)
+    monkeypatch.setattr(chat, "stream_answer", spy_answer)
+    _post([{"role": "user", "content": "I'm jane@acme.com, 619-555-0134, card 4111 1111 1111 1111"}])
+    for sent in seen.values():
+        assert "jane@acme.com" not in sent and "555-0134" not in sent and "4111" not in sent
+    assert "[email removed]" in seen["answer"]
+
+
+def test_malformed_requests_get_one_plain_sentence():
+    empty = client.post("/api/chat", json={"session_id": "test-session-1",
+                                           "messages": [{"role": "user", "content": ""}]})
+    assert empty.status_code == 422 and empty.json() == {
+        "error": "Each message needs text, and must be under the length limit."}
+    none = client.post("/api/chat", json={"session_id": "test-session-1", "messages": []})
+    assert none.json()["error"].startswith("Send between 1 and")
+    junk = client.post("/api/chat", json={"hello": "world"})
+    assert junk.status_code == 422 and "error" in junk.json()

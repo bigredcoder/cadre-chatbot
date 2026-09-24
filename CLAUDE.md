@@ -62,7 +62,8 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 ## How we work
 - One phase from `plan.md` at a time. Finish, verify, explain, then Brian approves the commit.
 - Small commits, imperative messages ("Add Jev router with model fallback").
-- Before any commit: `ruff check .` and `pytest -q` must pass.
+- Before any commit: `ruff check .`, `mypy app`, and `pytest -q` must pass (the hook in
+  `.claude/hooks/` enforces it).
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
 - When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
 - **Never report an eval failure without its real example** (question, actual reply, what
@@ -74,13 +75,13 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
   file to prepare the walkthrough, so never let it fall behind.
 
 ## Commands (always use the project venv: `.venv/bin/...`)
-- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright && .venv/bin/playwright install chromium webkit`
+- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright mypy && .venv/bin/playwright install chromium webkit`
   (don't `pip install -e .`: the repo isn't laid out as a package, and it fails)
 - Run locally: `.venv/bin/uvicorn app.main:app --reload` (then open http://localhost:8000)
 - Unit tests (Python + JS): `.venv/bin/python -m pytest -q` (JS tests need Node; skipped without it)
 - Browser tests: `.venv/bin/python -m pytest e2e -q` (live site; `BASE_URL=` for local)
 - Answer-quality tests: `.venv/bin/python -m evals.run` (costs a few cents; uses the configured model)
-- Lint: `.venv/bin/ruff check .`
+- Lint and types: `.venv/bin/ruff check .` and `.venv/bin/python -m mypy app`
 - Deploy: push to `main` on GitHub (Vercel auto-deploys). Preview: `vercel deploy`
 
 ## Gotchas
