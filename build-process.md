@@ -652,7 +652,7 @@ and never judged it as a visitor would.
 
 **Say in the review:** "I used Jev twice: once to route the question, once as a judge on the model's own reply before interrupting the visitor with a sales offer. It fails open: if the judge is down, the offer stays."
 
-**09-24 · Fixes from a skeptical pre-submission audit, plus header icons** · commit _pending_
+**09-24 · Fixes from a skeptical pre-submission audit, plus header icons** · commit `fc12e50`
 - **Did:** audited the repo the way Cadre's reviewers will: git history and secrets, docs vs
   code, the live bot (21 real questions including injection and personal data), and code quality.
 - **Fixed:**
