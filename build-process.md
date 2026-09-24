@@ -692,7 +692,7 @@ and never judged it as a visitor would.
 
 **Say in the review:** "My own /ship gate caught a bug I'd just introduced: redacting before the model would have mangled budget questions. That's why the gate includes a review step and not just tests: the evals had no numbers in them."
 
-**09-24 · Hover labels and answers that match the screen (Brian's feedback)** · commit _pending_
+**09-24 · Hover labels and answers that match the screen (Brian's feedback)** · commit `212d923`
 - **Hover labels:** the header icon buttons (New chat, Talk to a strategist, More options,
   Close) show a label instantly on hover or keyboard focus. The browser's own tooltip took
   about a second and was easy to miss. Phones use the screen-reader names.
