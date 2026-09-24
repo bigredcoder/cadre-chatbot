@@ -22,19 +22,18 @@ class AnswerError(Exception):
     """The model couldn't produce a usable answer. The caller shows a friendly fallback."""
 
 
-def build_system_prompt(topic: str) -> str:
-    """System prompt with the knowledge and the router's topic filled in."""
+def build_system_prompt(topic: str, screen: str = "") -> str:
+    """System prompt with the knowledge, the router's topic, and what the widget will show."""
     template = config.SYSTEM_PROMPT_PATH.read_text()
     template = re.sub(r"<!--.*?-->", "", template, flags=re.DOTALL).strip()  # drop owner notes
-    return template.replace("{{KNOWLEDGE}}", config.KNOWLEDGE_PATH.read_text()).replace(
-        "{{TOPIC}}", topic
-    )
+    return (template.replace("{{KNOWLEDGE}}", config.KNOWLEDGE_PATH.read_text())
+            .replace("{{TOPIC}}", topic).replace("{{SCREEN}}", screen or "Nothing extra."))
 
 
-def build_messages(history: list[dict], topic: str) -> list[dict]:
+def build_messages(history: list[dict], topic: str, screen: str = "") -> list[dict]:
     """System prompt + only the most recent turns (keeps cost and context bounded)."""
     recent = history[-config.MAX_HISTORY_MESSAGES :]
-    return [{"role": "system", "content": build_system_prompt(topic)}, *recent]
+    return [{"role": "system", "content": build_system_prompt(topic, screen)}, *recent]
 
 
 def _visible(text: str) -> str:
@@ -46,7 +45,7 @@ def _visible(text: str) -> str:
     return clean
 
 
-async def stream_answer(history: list[dict], topic: str) -> AsyncIterator[dict]:
+async def stream_answer(history: list[dict], topic: str, screen: str = "") -> AsyncIterator[dict]:
     """Yield {"type": "token", "text": ...} chunks, then one {"type": "done", ...} summary."""
     key = config.openrouter_key()
     if not key:
@@ -54,7 +53,7 @@ async def stream_answer(history: list[dict], topic: str) -> AsyncIterator[dict]:
 
     body = {
         "model": config.ANSWER_MODEL,
-        "messages": build_messages(history, topic),
+        "messages": build_messages(history, topic, screen),
         "max_tokens": config.ANSWER_MAX_TOKENS,
         "temperature": config.ANSWER_TEMPERATURE,
         "stream": True,

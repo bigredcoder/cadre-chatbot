@@ -33,7 +33,7 @@ def _post(messages):
 
 
 def test_streams_route_tokens_and_done(monkeypatch):
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "Yes."}
         yield {"type": "done", "handoff": False, "model": "m"}
     monkeypatch.setattr(chat, "stream_answer", fake)
@@ -42,7 +42,7 @@ def test_streams_route_tokens_and_done(monkeypatch):
 
 
 def test_model_failure_gives_friendly_fallback_with_contact(monkeypatch):
-    async def broken(history, topic):
+    async def broken(history, topic, screen=""):
         raise AnswerError("boom")
         yield  # makes this an async generator
     monkeypatch.setattr(chat, "stream_answer", broken)
@@ -63,7 +63,7 @@ def test_confident_off_topic_gets_canned_reply_without_model(monkeypatch):
     async def off(history, token=None):
         return Route("off_topic", 0.99, "jev", False, False)
 
-    async def must_not_run(history, topic):
+    async def must_not_run(history, topic, screen=""):
         raise AssertionError("model should not be called")
         yield
     monkeypatch.setattr(chat, "route", off)
@@ -76,7 +76,7 @@ def test_rule_handoff_overrides_model(monkeypatch):
     async def pricing(history, token=None):
         return Route("pricing", 0.99, "jev", False, True)
 
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "It depends."}
         yield {"type": "done", "handoff": False, "model": "m"}
     monkeypatch.setattr(chat, "route", pricing)
@@ -86,7 +86,7 @@ def test_rule_handoff_overrides_model(monkeypatch):
 
 
 def test_each_turn_is_saved_once_with_outcome(monkeypatch):
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "Yes."}
         yield {"type": "done", "handoff": False, "model": "m", "latency_ms": 5}
     monkeypatch.setattr(chat, "stream_answer", fake)
@@ -98,7 +98,7 @@ def test_each_turn_is_saved_once_with_outcome(monkeypatch):
 
 
 def test_failed_answer_is_saved_as_error(monkeypatch):
-    async def broken(history, topic):
+    async def broken(history, topic, screen=""):
         raise AnswerError("boom")
         yield
     monkeypatch.setattr(chat, "stream_answer", broken)
@@ -133,7 +133,7 @@ def test_lead_missing_field_is_422():
 
 
 def test_unexpected_exception_still_gives_fallback(monkeypatch):
-    async def boom(history, topic):
+    async def boom(history, topic, screen=""):
         raise ValueError("bad chunk")
         yield
     monkeypatch.setattr(chat, "stream_answer", boom)
@@ -167,7 +167,7 @@ def test_lead_whitespace_name_does_not_crash():
 
 
 def _model_tags_handoff(monkeypatch):
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "The portal is at portal.gocadre.ai."}
         yield {"type": "done", "handoff": True, "model": "m"}   # model added [HANDOFF]
     monkeypatch.setattr(chat, "stream_answer", fake)
@@ -204,7 +204,7 @@ def test_offer_kept_when_check_unavailable(monkeypatch):
 
 def test_offer_kept_when_the_reply_itself_offers_a_person(monkeypatch):
     # Audit 09-24: the reply said "I can connect you with a strategist" but no button showed
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "It's at portal.gocadre.ai. For login help, I can connect "
                                         "you with a strategist."}
         yield {"type": "done", "handoff": True, "model": "m"}
@@ -236,7 +236,7 @@ def test_slow_routing_times_out_and_still_answers(monkeypatch):
         await asyncio.sleep(1)
     monkeypatch.setattr(chat, "route", hung)
 
-    async def fake(history, topic):
+    async def fake(history, topic, screen=""):
         yield {"type": "token", "text": "Yes."}
         yield {"type": "done", "handoff": False, "model": "m"}
     monkeypatch.setattr(chat, "stream_answer", fake)
@@ -251,7 +251,7 @@ def test_personal_details_never_reach_the_model(monkeypatch):
         seen["route"] = history[-1]["content"]
         return Route("booking", 0.95, "jev", True, True)
 
-    async def spy_answer(history, topic):
+    async def spy_answer(history, topic, screen=""):
         seen["answer"] = history[-1]["content"]
         yield {"type": "token", "text": "A strategist can follow up."}
         yield {"type": "done", "handoff": True, "model": "m"}
@@ -272,3 +272,24 @@ def test_malformed_requests_get_one_plain_sentence():
     assert none.json()["error"].startswith("Send between 1 and")
     junk = client.post("/api/chat", json={"hello": "world"})
     assert junk.status_code == 422 and "error" in junk.json()
+
+
+def test_model_is_told_what_the_visitor_will_see(monkeypatch):
+    # Brian 09-24: the booking answer said "look for the button on our website" while the form
+    # was right below it. The model now gets told what the widget will show.
+    seen = {}
+
+    async def spy(history, topic, screen=""):
+        seen["screen"] = screen
+        yield {"type": "token", "text": "Fill in the form below."}
+        yield {"type": "done", "handoff": False, "model": "m"}
+    monkeypatch.setattr(chat, "stream_answer", spy)
+    cases = [(Route("booking", 0.9, "jev", False, True), chat.SCREEN_FORM),
+             (Route("pricing", 0.9, "jev", False, True), chat.SCREEN_OFFER),
+             (Route("services", 0.9, "jev", False, False), "")]
+    for decision, expected in cases:
+        async def fixed(history, token=None, d=decision):
+            return d
+        monkeypatch.setattr(chat, "route", fixed)
+        _post([{"role": "user", "content": "hi"}])
+        assert seen["screen"] == expected, decision.topic

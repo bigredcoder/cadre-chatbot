@@ -30,6 +30,21 @@ OFFERS_A_PERSON = re.compile(r"(connect|put) you (with|in touch)|talk (to|with) 
                              re.IGNORECASE)
 
 
+# Tell the model what the widget will show under its reply, so the text matches the screen
+# (Brian, 09-24: "How do I book a call?" said "look for the button on our website" while the
+# form was right there). Mirrors the widget's rule in public/index.html: explicit request or
+# booking → the form; any other rule handoff → a "Talk to a strategist" button.
+SCREEN_FORM = ("A contact form to reach a strategist (name, email, subject, message). Tell them "
+               "to fill in the form below. Also mention hello@gocadre.ai or cadre.ai/contact.")
+SCREEN_OFFER = "A \"Talk to a strategist\" button that opens a short contact form."
+
+
+def _screen(decision: Route) -> str:
+    if not decision.handoff:
+        return ""
+    return SCREEN_FORM if decision.asks_for_human or decision.topic == "booking" else SCREEN_OFFER
+
+
 async def _route(history: list[dict], oidc: str | None) -> Route:
     """Routing has its own deadline; past it, answer anyway with a neutral topic."""
     try:
@@ -89,7 +104,7 @@ async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> As
 
     reply, done = "", {}
     try:
-        async for item in stream_answer(history, decision.topic):
+        async for item in stream_answer(history, decision.topic, _screen(decision)):
             kind = item.pop("type")
             if kind == "token":
                 reply += item["text"]

@@ -691,3 +691,17 @@ and never judged it as a visitor would.
 - **Checked:** ruff, mypy, 61 unit tests, 10 browser tests (local), evals 26/26.
 
 **Say in the review:** "My own /ship gate caught a bug I'd just introduced: redacting before the model would have mangled budget questions. That's why the gate includes a review step and not just tests: the evals had no numbers in them."
+
+**09-24 · Hover labels and answers that match the screen (Brian's feedback)** · commit _pending_
+- **Hover labels:** the header icon buttons (New chat, Talk to a strategist, More options,
+  Close) show a label instantly on hover or keyboard focus. The browser's own tooltip took
+  about a second and was easy to miss. Phones use the screen-reader names.
+- **Found:** "How do I book a call?" answered "look for the 'Talk to an AI Strategist' button on
+  our website" while the contact form was right below the answer.
+- **Fix:** the server now tells the model what the widget will show under its reply: the form,
+  a "Talk to a strategist" button, or nothing (`app/chat.py` → `{{SCREEN}}` in the prompt).
+  Now: "You can book a call… by filling out the form below. You can also reach Cadre directly
+  at hello@gocadre.ai or cadre.ai/contact."
+- **Checked:** 62 unit, 10 browser (local), evals 26/26, topic and handoff accuracy 100%.
+
+**Say in the review:** "The model can't see the UI, so I tell it what the visitor will see under its reply. The text and the screen always agree, which is a small thing that makes it feel like a real product."
