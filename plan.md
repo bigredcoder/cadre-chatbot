@@ -65,6 +65,7 @@ no autonomous actions.
 | Decision | Why | Trade-off accepted |
 |---|---|---|
 | Python + FastAPI + one HTML page | Readable, matches the role, fast to deploy on Vercel | Less UI polish than a React stack |
+| **Chat window = Deep Chat** (changed 09-23) | A proven component for the solved problem (streaming, scroll, mobile); our effort goes to grounding, routing, and evals. Research: hybrid is the most practical deployment | A 387 KB dependency; self-hosted so no third-party script can take the page down |
 | Jev for routing, chat model for answers | Jev returns typed decisions with confidence; cheap and fast | New (Sept 2026) service → built a fallback |
 | Model fallback when Jev is unsure or down | The demo can't depend on a week-old beta | Slightly more code |
 | Knowledge in the prompt, not retrieval | Small corpus; simpler and more accurate | Won't scale to hundreds of pages as-is |
@@ -223,6 +224,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | 2 eval cases written too strictly | They failed correct, safe answers (test bugs, not bot bugs) | Read each failing reply before judging | Widened the expected wording; logged as test fixes |
 | 09-23 | Claude's summary of the model comparison: "7 of 11 models implied a SOC 2 certification"; "without Jev the handoff never fired" | Both false. The replies were correct; the checker was too strict (wording, curly quotes, bold) and scored a wrong topic label as critical | Brian asked for real examples of each error; reading them exposed it | Checker normalizes text; severity comes from what failed; saved replies rescored; failure-example reports generated automatically |
 | 09-23 | Code written across Phases 3–5 | code-reviewer subagent found 8 issues: a stream that could end silently ("Writing an answer…" forever), client-controlled history size, transcript save delaying the UI, a form promising a follow-up the demo never sends, a whitespace name 500, Start over leaking into the new chat, short phones unredacted, a stale .env.example | Pre-submission review by the `code-reviewer` subagent; each claim checked against the code first (it had been wrong once before) | All 8 fixed with regression tests (50 unit tests); verifying #7 also exposed dates being redacted as phones, now fixed |
+| 09-23 | The chat window: hand-built by Claude (Phases 3–7) | Never put build-vs-use-a-component in front of Brian, though the research weighs buy vs. build vs. hybrid and the brief allows component libraries. The result jumped, overflowed on iPhone, and zoomed on input focus | Brian's own iPhone (screenshots); Claude had tested only Chromium at phone size, never Safari's engine | Replaced with Deep Chat (MIT, self-hosted); WebKit iPhone tests added that fail on any horizontal overflow or sub-16px input |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 
 ## 5a. Running costs (Brian, 09-23)

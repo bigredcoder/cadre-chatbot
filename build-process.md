@@ -530,7 +530,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Smoother widget motion (Brian: "very harsh when presenting data") · commit pending
+## 2026-09-23 · Smoother widget motion (Brian: "very harsh when presenting data") · commit `b493a68`
 **Did**
 - The panel eases open and closed (fade + slight rise; `hidden` is still set after closing,
   for screen readers).
@@ -556,3 +556,57 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
   panel animates (opacity 0.91 mid-open → 1), typing dots show, messages use the rise animation.
 
 **Say in the review:** "Smoothing the UI wasn't only cosmetic. The browser tests caught that the new timing let a finishing answer steal focus from a closed chat, a keyboard-accessibility bug I'd never have seen by eye."
+
+---
+
+## 2026-09-23 · Chat window rebuilt on Deep Chat (after Brian's iPhone review) · commit pending
+**What Brian found on his iPhone:** the chat jumped, content ran off the right edge, the
+page slid side to side, and it felt "like a first coding project." He was right.
+
+**Why I missed it:** I hand-built the chat window and never offered the build-vs-component
+decision, although the research weighs buy vs. build vs. hybrid and the brief allows
+component libraries. I tested phones only in Chromium at phone size, never Safari's engine,
+and never judged it as a visitor would.
+
+**Did**
+- The chat window is now **Deep Chat** (MIT, v2.5.1), self-hosted in `public/vendor/` (no
+  third-party CDN at runtime). It handles streaming, scroll anchoring, the typing indicator,
+  suggestion buttons, and mobile input. Everything that matters stays ours: routing, grounding,
+  safe link rendering, the steady text reveal, the handoff, storage, and evals.
+- Handoff is now a small "Want a strategist to follow up?" card; the form expands in place
+  only when tapped (no big form slamming in after an answer).
+- "Behind the scenes" is one quiet status line under the header.
+- 16 px inputs everywhere (Safari zooms the page for smaller inputs, the "page slides" bug).
+- The closed panel is removed from the page (the component ignored `visibility:hidden` and
+  blocked taps on the launcher).
+
+**Found and fixed while building (each caught by a test or by watching a recording)**
+- The component file is an ES module: it rendered blank until loaded with `type="module"`.
+- Settings applied before the component loaded were lost → configure after `customElements.whenDefined`.
+- The send button sat 16 px high and stayed faded after typing → restyled all its states.
+- An answer ended at "hello@gocadre.a": the last update was dropped on close → the final
+  render is now awaited.
+- "Start over" mid-answer re-added the old answer → it now cancels the in-flight answer first.
+
+**Checked**
+- New browser suite: 8 tests, including **2 iPhone tests in WebKit** that fail on any
+  horizontal overflow or sub-16px input. 8/8, three runs in a row. 50/50 unit tests.
+- Walkthrough on the iPhone 14 profile: page width = screen width at every step; text
+  reveal ≤ 9 characters per frame; full answer rendered; form validates and confirms once.
+- A recorded iPhone session (`../cadence-iphone-preview.mp4`), reviewed frame by frame
+  before showing Brian.
+
+**Say in the review:** "My first chat window was hand-built, and Brian's iPhone exposed it. I switched to a proven component for the solved problem and spent my effort on the unsolved ones. I also added Safari-engine tests, because testing phones in Chrome is how I'd missed it."
+
+**Matched to a production reference: Chatbase (Brian, 09-23)**
+- Studied Chatbase's live widget, then matched its patterns: a solid dark header with a "•••"
+  menu (Talk to a strategist, Start a new chat, Behind the scenes, privacy) and ✕; a short
+  greeting in a bubble; right-aligned suggestion pills; a dismissible privacy note; no footer
+  clutter; the send button inside the input; the launcher turns into a round close button.
+- Handoff follows Chatbase too: an explicit request ("How do I book a call?", "Can someone
+  call me?") shows the form right away; an implicit one (pricing) offers it first.
+- The form is a white card with a hairline border and example placeholders.
+- Side-by-side screenshots against Chatbase: `../compare-desktop.png`, `../compare-iphone.png`.
+- Browser tests updated for the menu; 8/8, twice.
+
+**Say in the review:** "For the UI, I benchmarked against a production widget, Chatbase, instead of designing from scratch, and kept every rule of my own: grounded answers, the handoff, and the privacy notice."

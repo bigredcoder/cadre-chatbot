@@ -2,82 +2,90 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Cadence · Cadre AI assistant (demo)</title>
 <meta name="description" content="Take-home demo of Cadence, an AI support assistant for Cadre AI.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Inter+Tight:wght@700&family=Poppins:wght@500&display=swap" rel="stylesheet">
+<!-- Chat window: Deep Chat (MIT, v2.5.1), self-hosted so no third-party script can take the page down -->
+<script type="module" src="/vendor/deep-chat-2.5.1.js"></script>
 <style>
-  :root { --red:#DB4545; --red-ink:#B83232; --ink:#0C0407; --txt:#2b2b2b; --sub:#555; --warm:#FAF9F6; --line:#d9d5cc; --field:#bdb8ad; }
-  * { box-sizing: border-box; }
+  :root { --red:#DB4545; --red-ink:#B83232; --ink:#0C0407; --txt:#2b2b2b; --sub:#555; --warm:#FAF9F6; --line:#e5e2da; }
+  * { box-sizing:border-box; }
+  html, body { overflow-x:hidden; }
   body { margin:0; font-family:Inter,Arial,sans-serif; color:var(--txt); background:var(--warm); }
   a { color:var(--red-ink); }
-  .skip { position:absolute; left:-999px; } .skip:focus { left:16px; top:16px; background:#fff; padding:8px; z-index:10; }
-  header { padding:20px 24px; display:flex; justify-content:space-between; align-items:center; }
-  .wordmark { font-family:Poppins,Inter,sans-serif; font-size:20px; font-weight:500; }
+  .skip { position:absolute; left:-999px; } .skip:focus { left:16px; top:16px; background:#fff; padding:8px; z-index:30; }
+
+  /* ---- Demo page ---- */
+  header { padding:20px 24px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .wordmark { font-family:Poppins,Inter,sans-serif; font-size:20px; font-weight:500; white-space:nowrap; }
   .demo-note { font-size:13px; color:var(--sub); }
-  main { max-width:720px; margin:48px auto; padding:0 24px; text-align:center; }
+  main { max-width:720px; margin:56px auto; padding:0 24px; text-align:center; }
   .badge { display:inline-flex; gap:6px; align-items:center; background:#fff; border-radius:36px; padding:3px 10px 3px 3px; font-size:13px; }
   .badge b { background:var(--red); color:#fff; border-radius:36px; padding:2px 8px; font-weight:500; }
-  h1 { font-family:'Inter Tight',Arial,sans-serif; font-weight:700; font-size:clamp(30px,5vw,44px); line-height:1.1; letter-spacing:-0.02em; margin:16px 0 12px; }
+  h1 { font-family:'Inter Tight',Arial,sans-serif; font-weight:700; font-size:clamp(30px,6vw,44px); line-height:1.1; letter-spacing:-0.02em; margin:16px 0 12px; }
   h1 span { color:var(--red); }
   main p { color:var(--sub); font-size:16px; line-height:1.6; }
 
-  /* Launcher: labeled, not just an icon (research findings #1) */
-  #launcher { position:fixed; right:20px; bottom:20px; display:flex; align-items:center; gap:8px; background:var(--ink); color:#fff; border:none; border-radius:36px; padding:12px 18px; font:500 15px Inter,Arial,sans-serif; cursor:pointer; z-index:20; }
-  #launcher:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline:3px solid var(--red); outline-offset:2px; }
-
-  #panel { position:fixed; right:20px; bottom:84px; width:390px; max-width:calc(100vw - 24px); height:min(620px, calc(100vh - 110px)); background:#fff; border:1px solid #e5e2da; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.10); z-index:20; }
-  #panel[hidden] { display:none; }
-  /* Smooth motion (Brian, 09-23): panel eases open, messages rise in, typing dots pulse */
-  #panel { opacity:0; transform:translateY(14px) scale(.985); transform-origin:bottom right;
-           transition:opacity .22s ease, transform .26s cubic-bezier(.2,.8,.2,1); }
-  #panel.open { opacity:1; transform:none; }
-  #launcher { transition:transform .18s ease, background-color .18s ease; }
+  /* ---- Launcher ---- */
+  #launcher { position:fixed; right:20px; bottom:calc(20px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:8px;
+              background:var(--ink); color:#fff; border:none; border-radius:36px; padding:13px 18px; font:500 15px Inter,Arial,sans-serif;
+              cursor:pointer; z-index:20; box-shadow:0 6px 20px rgba(12,4,7,.18); transition:transform .2s ease, opacity .2s ease; }
   #launcher:hover { transform:translateY(-1px); }
-  @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-  .msg, .chips, .bts, .handoff { animation:rise .32s cubic-bezier(.2,.8,.2,1) both; }
-  .chip, .send, .human, .iconbtn, .handoff .submit { transition:background-color .15s ease, border-color .15s ease, color .15s ease, transform .1s ease; }
-  .chip:active, .send:active, .human:active, .handoff .submit:active { transform:scale(.97); }
-  .typing { display:inline-flex; gap:4px; padding:4px 2px; }
-  .typing span { width:6px; height:6px; border-radius:50%; background:#9a948a; animation:pulse 1.2s ease-in-out infinite; }
-  .typing span:nth-child(2) { animation-delay:.15s; } .typing span:nth-child(3) { animation-delay:.3s; }
-  @keyframes pulse { 0%, 80%, 100% { opacity:.25; transform:translateY(0); } 40% { opacity:1; transform:translateY(-3px); } }
-  .ph { padding:12px 14px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; }
+  #launcher .when-open { display:none; }
+  #launcher.is-open { width:52px; height:52px; padding:0; justify-content:center; }
+  #launcher.is-open .when-closed { display:none; } #launcher.is-open .when-open { display:block; }
+  :focus-visible { outline:3px solid var(--red); outline-offset:2px; }
+
+  /* ---- Panel: one fixed frame; only opacity/transform animate (no layout jumps) ---- */
+  #panel { position:fixed; right:20px; bottom:calc(84px + env(safe-area-inset-bottom)); width:400px; height:min(640px, calc(100dvh - 110px));
+           background:#fff; border:1px solid var(--line); border-radius:18px; display:flex; flex-direction:column; overflow:hidden;
+           box-shadow:0 16px 48px rgba(12,4,7,.16); z-index:25;
+           opacity:0; transform:translateY(16px); transform-origin:bottom right;
+           transition:opacity .22s ease, transform .28s cubic-bezier(.2,.8,.2,1); }
+  /* Closed = removed from the page entirely (the chat component overrides "visibility:hidden"
+     and would still catch taps). Open: unhide, then animate in on the next frame. */
+  #panel[hidden] { display:none; }
+  #panel.open { opacity:1; transform:none; }
+  /* Header: solid Cadre ink, like production widgets (Chatbase, Intercom) */
+  .ph { flex:none; display:flex; align-items:center; gap:10px; padding:12px 10px 12px 16px; background:var(--ink); color:#fff; }
   .ph .t { flex:1; min-width:0; }
-  .ph .t strong { display:block; font-family:'Inter Tight',Arial,sans-serif; font-size:15px; }
-  .ph .t small { color:var(--sub); font-size:12px; }
-  .iconbtn { background:#fff; border:1px solid var(--line); border-radius:36px; padding:6px 10px; font:13px Inter,Arial,sans-serif; color:var(--txt); cursor:pointer; }
-  #log { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; font-size:14px; line-height:1.55; }
-  .msg { background:var(--warm); border-radius:14px; padding:9px 12px; max-width:90%; white-space:pre-wrap; overflow-wrap:anywhere; text-align:left; }
-  .msg ul { margin:4px 0; padding-left:18px; white-space:normal; }
-  .msg.user { align-self:flex-end; background:var(--ink); color:#fff; }
-  .msg.user a { color:#fff; }
-  .msg.error { background:#fdecec; color:var(--red-ink); }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .chip { background:#fff; border:1px solid var(--line); border-radius:36px; padding:7px 12px; font:13px Inter,Arial,sans-serif; color:var(--txt); cursor:pointer; text-align:left; }
-  .chip:hover { border-color:var(--red); color:var(--red-ink); }
-  .bts { border:1px dashed var(--line); border-radius:10px; padding:6px 9px; font:12px ui-monospace,Menlo,monospace; color:var(--sub); text-align:left; }
-  .handoff { border:1px solid #e5e2da; background:#fff; border-radius:14px; padding:12px; text-align:left; }
-  .handoff strong { font-family:'Inter Tight',Arial,sans-serif; }
-  .handoff label { display:block; font-size:12px; color:var(--sub); margin:8px 0 3px; }
-  .handoff input, .handoff textarea { width:100%; font:14px Inter,Arial,sans-serif; color:#222; border:1px solid var(--field); border-radius:10px; padding:8px 10px; }
-  .handoff textarea { min-height:70px; resize:vertical; }
-  .handoff .err { color:var(--red-ink); font-size:13px; margin:6px 0 0; }
-  .handoff .submit { margin-top:10px; background:var(--ink); color:#fff; border:none; border-radius:36px; padding:8px 14px; font:500 13px Inter,Arial,sans-serif; cursor:pointer; }
-  .handoff .submit[disabled] { opacity:.6; cursor:wait; }
-  .pf { padding:10px 14px; border-top:1px solid #eee; }
-  form.ask { display:flex; gap:6px; }
-  form.ask label { position:absolute; left:-999px; }
-  #q { flex:1; font:14px Inter,Arial,sans-serif; color:#222; border:1px solid var(--field); border-radius:36px; padding:10px 14px; }
-  #q::placeholder { color:#6b6b6b; }
-  .send { background:var(--ink); color:#fff; border:none; border-radius:36px; padding:0 14px; font:500 14px Inter,Arial,sans-serif; cursor:pointer; }
-  .row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--sub); flex-wrap:wrap; }
-  .row label { display:flex; align-items:center; gap:4px; }
-  .human { background:var(--ink); color:#fff; border:none; border-radius:36px; padding:6px 12px; font:500 12px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
-  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
-  @media (max-width:480px) { #panel { right:0; bottom:0; width:100vw; max-width:none; height:100dvh; border-radius:0; } #launcher[aria-expanded="true"] { display:none; } }
-  @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; scroll-behavior:auto !important; } #panel { opacity:1; transform:none; } .typing span { opacity:.7; } }
+  .ph strong { display:block; font-family:'Inter Tight',Arial,sans-serif; font-size:15px; line-height:1.2; }
+  .ph small { display:block; color:rgba(255,255,255,.7); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hbtn { flex:none; width:34px; height:34px; border:none; border-radius:8px; background:transparent; color:#fff; font:15px Inter,Arial,sans-serif;
+          cursor:pointer; display:flex; align-items:center; justify-content:center; letter-spacing:1px; }
+  .hbtn:hover { background:rgba(255,255,255,.12); }
+  .menu-wrap { position:relative; }
+  .menu { position:absolute; right:0; top:40px; min-width:220px; background:#fff; border:1px solid var(--line); border-radius:12px;
+          box-shadow:0 12px 32px rgba(12,4,7,.16); padding:6px; z-index:5; display:flex; flex-direction:column; }
+  .menu[hidden] { display:none; }
+  .menu button, .menu a { text-align:left; background:none; border:none; border-radius:8px; padding:10px 12px; font:14px Inter,Arial,sans-serif;
+          color:var(--txt); text-decoration:none; cursor:pointer; }
+  .menu button:hover, .menu a:hover { background:var(--warm); }
+  .notice { flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px 8px 16px; font-size:12px; color:var(--sub);
+            background:var(--warm); border-bottom:1px solid #eee; }
+  .notice a { color:var(--red-ink); }
+  .notice button { margin-left:auto; flex:none; border:none; background:none; color:var(--sub); cursor:pointer; font-size:13px; padding:4px; }
+  .notice[hidden] { display:none; }
+  #status { flex:none; font:11.5px ui-monospace,Menlo,monospace; color:var(--sub); background:var(--warm); border-bottom:1px solid #eee;
+            padding:6px 16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #status[hidden] { display:none; }
+  deep-chat { flex:1; min-height:0; display:block; }
+  deep-chat { padding-bottom:env(safe-area-inset-bottom); }
+
+  /* ---- Phone: full-screen sheet that slides up; nothing wider than the screen ---- */
+  @media (max-width:520px) {
+    header { flex-direction:column; align-items:flex-start; gap:4px; padding:16px 16px 0; }
+    .demo-note { font-size:12px; }
+    main { margin:36px auto; padding:0 16px; }
+    #launcher { right:16px; }
+    #launcher.is-open { display:none; }
+    #panel { inset:0; width:100%; height:100dvh; border:none; border-radius:0; transform:translateY(32px); }
+    #panel.open { transform:none; }
+    .ph { padding-top:calc(10px + env(safe-area-inset-top)); }
+  }
+  @media (prefers-reduced-motion:reduce) { #panel, #panel.open, #launcher { transition:none !important; transform:none !important; } }
 </style>
 </head>
 <body>
@@ -92,222 +100,304 @@
   <p>Cadence is Cadre's AI assistant. It answers questions about Cadre's services, industries, the AI Maturity Index, and the client portal, using only what Cadre has published. A strategist is one click away.</p>
 </main>
 
-<button id="launcher" aria-controls="panel" aria-expanded="false">
-  <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/></svg>
-  Ask Cadre's AI
+<button id="launcher" aria-controls="panel" aria-expanded="false" aria-label="Ask Cadre's AI">
+  <svg class="when-closed" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/></svg>
+  <span class="when-closed">Ask Cadre's AI</span>
+  <svg class="when-open" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </button>
 
 <section id="panel" role="dialog" aria-modal="false" aria-labelledby="ptitle" hidden>
   <div class="ph">
-    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/><text x="16" y="21" text-anchor="middle" font-family="Inter Tight,Arial" font-weight="700" font-size="14" fill="#fff">C</text></svg>
-    <div class="t"><strong id="ptitle">Cadence</strong><small>Cadre's AI assistant · answers from cadre.ai</small></div>
-    <button class="iconbtn" id="restart" type="button">Start over</button>
-    <button class="iconbtn" id="close" type="button" aria-label="Close the assistant">✕</button>
-  </div>
-  <div id="log" aria-label="Conversation"></div>
-  <div class="sr" id="announce" aria-live="polite"></div>
-  <div class="pf">
-    <form class="ask" id="ask">
-      <label for="q">Ask Cadence a question</label>
-      <input id="q" name="q" autocomplete="off" maxlength="1000" placeholder="Ask a question">
-      <button class="send" type="submit">Send</button>
-    </form>
-    <div class="row">
-      <button class="human" id="human" type="button">Talk to a strategist</button>
-      <label><input type="checkbox" id="bts"> Behind the scenes</label>
+    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/><text x="16" y="21" text-anchor="middle" font-family="Inter Tight,Arial" font-weight="700" font-size="14" fill="#fff">C</text></svg>
+    <div class="t"><strong id="ptitle">Cadence</strong><small>Cadre's AI assistant</small></div>
+    <div class="menu-wrap">
+      <button class="hbtn" id="menu-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options">•••</button>
+      <div class="menu" id="menu" role="menu" hidden>
+        <button role="menuitem" type="button" id="human">Talk to a strategist</button>
+        <button role="menuitem" type="button" id="restart">Start a new chat</button>
+        <button role="menuitem" type="button" id="bts" aria-pressed="false">Show behind the scenes</button>
+        <a role="menuitem" href="/privacy.html" target="_blank" rel="noopener">How chat data is used</a>
+      </div>
     </div>
-    <div class="row">Please don't share passwords or payment details. <a href="/privacy.html" target="_blank" rel="noopener">How chat data is used</a></div>
+    <button class="hbtn" id="close" type="button" aria-label="Close the assistant">✕</button>
   </div>
+  <div id="status" hidden aria-live="off"></div>
+  <div class="notice" id="notice">Chats are saved for 30 days with emails and phone numbers removed. <a href="/privacy.html" target="_blank" rel="noopener">Details</a>
+    <button type="button" id="notice-x" aria-label="Dismiss">✕</button></div>
+  <deep-chat id="chat"></deep-chat>
 </section>
 
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const log = $("log"), q = $("q"), panel = $("panel"), launcher = $("launcher");
+  const panel = $("panel"), launcher = $("launcher"), chat = $("chat"), status = $("status");
+  const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ALLOWED = ["cadre.ai", "www.cadre.ai", "portal.gocadre.ai"];  // research findings #7
-  const STARTERS = ["What does Cadre do?", "Do you work with my industry?",
-                    "What is the AI Maturity Index?", "How do I book a call?",
-                    "How do you handle data security?"];
-  let history = [], busy = false, showBts = false, lastTopic = "";
-  const SUBJECTS = { pricing:"Pricing question", booking:"Talk to an AI strategist", portal:"Client portal help",
-    maturity_index:"AI Maturity Index", llm_security:"Data security question", industries:"Industry fit",
-    services:"Services question", results:"Case studies", company:"About Cadre" };
-  let session = crypto.randomUUID();
+  const STARTERS = ["What does Cadre do?", "Do you work with my industry?", "What is the AI Maturity Index?",
+                    "How do I book a call?", "How do you handle data security?"];
+  const SUBJECTS = { pricing: "Pricing question", booking: "Talk to an AI strategist", portal: "Client portal help",
+    maturity_index: "AI Maturity Index", llm_security: "Data security question", industries: "Industry fit",
+    services: "Services question", results: "Case studies", company: "About Cadre" };
+  const FALLBACK = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
+  let session = crypto.randomUUID(), history = [], lastTopic = "", lastQuestion = "";
+  let inflight = null, abortCtl = null;  // the answer currently streaming, so "Start over" can cancel it
 
-  // --- Safe rendering: text only, links only to Cadre's own sites ---
-  function esc(s) { return s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+  // ---- Safe rendering (unchanged rules): escape everything; links only to Cadre's sites ----
+  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
   function linkify(s) {
-    return s.replace(/(https?:\/\/)?((?:www\.)?cadre\.ai(?:\/[\w\-\/]*)?|portal\.gocadre\.ai(?:\/[\w\-\/]*)?)|hello@gocadre\.ai/g, (m, proto, hostpath) => {
+    return s.replace(/(https?:\/\/)?((?:www\.)?cadre\.ai(?:\/[\w\-\/]*)?|portal\.gocadre\.ai(?:\/[\w\-\/]*)?)|hello@gocadre\.ai/g, (m, p, hostpath) => {
       if (m === "hello@gocadre.ai") return `<a href="mailto:hello@gocadre.ai">${m}</a>`;
       const url = new URL("https://" + hostpath.replace(/[.\/]+$/, ""));
-      if (!ALLOWED.includes(url.hostname)) return m;
-      return `<a href="${url.href}" target="_blank" rel="noopener">${esc(m)}</a>`;
+      return ALLOWED.includes(url.hostname) ? `<a href="${url.href}" target="_blank" rel="noopener">${esc(m)}</a>` : m;
     });
   }
   function render(text) {
-    const lines = esc(text.trim()).split("\n");
-    let html = "", inList = false;
-    for (const raw of lines) {
-      const line = raw.replace(/\*\*(.+?)\*\*/g, "$1");
+    let html = "", list = false;
+    for (const raw of esc(text.trim()).split("\n")) {
+      const line = raw.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
       const item = line.match(/^\s*[*\-•]\s+(.*)/);
-      if (item) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${linkify(item[1])}</li>`; continue; }
-      if (inList) { html += "</ul>"; inList = false; }
-      html += linkify(line) + "\n";
+      if (item) { if (!list) { html += "<ul>"; list = true; } html += `<li>${linkify(item[1])}</li>`; continue; }
+      if (list) { html += "</ul>"; list = false; }
+      if (line.trim()) html += `<p>${linkify(line)}</p>`;
     }
-    return (inList ? html + "</ul>" : html).trim();
+    return `<div class="cad-msg">${list ? html + "</ul>" : html}</div>`;
   }
 
-  const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Follow new content only if the visitor is already near the bottom (don't yank readers)
-  function stick(smooth = true) {
-    const near = log.scrollHeight - log.scrollTop - log.clientHeight < 140;
-    if (near) log.scrollTo({ top: log.scrollHeight, behavior: smooth && !REDUCED ? "smooth" : "auto" });
+  // ---- Handoff card (same fields as cadre.ai/contact; demo: sends and stores nothing) ----
+  function formHtml() {
+    const subject = esc(SUBJECTS[lastTopic] || "Talk to an AI strategist"), msg = esc(lastQuestion);
+    return `<div class="cad-form" data-key="${crypto.randomUUID()}">
+      <div class="cad-form-title">Talk to an AI Strategist</div>
+      <div class="cad-form-note">Demo: nothing is sent. In production, a strategist from the Cadre team follows up by email.</div>
+      <label>Name<input name="name" autocomplete="name" placeholder="Jane Smith"></label>
+      <label>Email<input name="email" type="email" autocomplete="email" placeholder="jane@company.com"></label>
+      <label>Subject<input name="subject" value="${subject}"></label>
+      <label>Message<textarea name="message" rows="2">${msg}</textarea></label>
+      <div class="cad-form-err" role="alert"></div>
+      <button type="button" class="cad-form-send">Send to the team</button>
+    </div>`;
   }
-  function add(cls, html) {
-    const d = document.createElement("div");
-    d.className = "msg " + cls; d.innerHTML = html;
-    log.appendChild(d); stick(); return d;
+  const offerHtml = () => `<div class="cad-offer"><span>Want a strategist to follow up?</span>
+      <button type="button" class="cad-offer-btn">Talk to a strategist</button></div>`;
+  function expandOffer(event) {
+    const card = event.target.closest(".cad-offer"), tpl = document.createElement("template");
+    tpl.innerHTML = formHtml().trim();
+    const form = tpl.content.firstElementChild;
+    // The component wires classes only when a message first renders; wire this one ourselves
+    form.querySelector(".cad-form-send").addEventListener("click", submitForm);
+    card.replaceWith(form);
+    form.querySelector("input[name=name]").focus({ preventScroll: true });
   }
-  function note(html) {
-    const d = document.createElement("div");
-    d.className = "bts"; d.innerHTML = html; d.hidden = !showBts;
-    log.appendChild(d); stick();
-  }
-  function announce(text) { $("announce").textContent = ""; setTimeout(() => $("announce").textContent = text, 50); }
-
-  function welcome() {
-    log.innerHTML = "";
-    add("", "Hi, I'm Cadence, Cadre's AI assistant. I can answer questions about Cadre's services, industries, the AI Maturity Index, and the client portal, or connect you with a strategist.");
-    const w = document.createElement("div"); w.className = "chips";
-    STARTERS.forEach((s) => { const b = document.createElement("button"); b.className = "chip"; b.type = "button"; b.textContent = s; b.onclick = () => ask(s); w.appendChild(b); });
-    log.appendChild(w);
-  }
-
-  // Handoff form: same fields as cadre.ai/contact, prefilled so nobody retypes
-  // (research findings #9). Demo only: the server sends and stores nothing, and says so.
-  function showHandoff() {
-    const lastQ = [...history].reverse().find((m) => m.role === "user")?.content || "";
-    const id = "f" + Math.random().toString(36).slice(2, 8);
-    const key = crypto.randomUUID();  // one key per form: double-clicks can't duplicate (findings #10)
-    const d = document.createElement("form"); d.className = "handoff"; d.noValidate = true;
-    d.setAttribute("aria-labelledby", id + "t");
-    d.innerHTML = `<strong id="${id}t">Talk to an AI Strategist</strong>
-      <div style="font-size:13px;color:var(--sub)">Demo: nothing is sent. In production, a strategist from the Cadre team follows up by email.</div>
-      <label for="${id}n">Name</label><input id="${id}n" name="name" autocomplete="name" required>
-      <label for="${id}e">Email</label><input id="${id}e" name="email" type="email" autocomplete="email" required>
-      <label for="${id}s">Subject</label><input id="${id}s" name="subject" required>
-      <label for="${id}m">Message</label><textarea id="${id}m" name="message" required></textarea>
-      <p class="err" role="alert" hidden></p>
-      <button class="submit" type="submit">Send to the team</button>`;
-    d.querySelector(`#${id}s`).value = SUBJECTS[lastTopic] || "Talk to an AI strategist";
-    d.querySelector(`#${id}m`).value = lastQ;
-    const err = d.querySelector(".err"), btn = d.querySelector(".submit");
-    d.oninput = () => (err.hidden = true);
-    d.onsubmit = async (e) => {
-      e.preventDefault();
-      const f = Object.fromEntries(new FormData(d));
-      const missing = ["name", "email", "subject", "message"].find((k) => !String(f[k] || "").trim());
-      if (missing) { err.textContent = `Enter your ${missing} first.`; err.hidden = false; d.querySelector(`[name=${missing}]`).focus(); return; }
-      btn.disabled = true; btn.textContent = "Sending…";
-      try {
-        const r = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, idempotency_key: key }) });
-        const data = await r.json();
-        if (!r.ok || !data.ok) throw new Error(data.message || "Check the form and try again.");
-        d.replaceWith(Object.assign(document.createElement("div"), { className: "msg", textContent: data.message }));
-        announce(data.message);
-      } catch (ex) {
-        err.textContent = ex.message.startsWith("Enter") ? ex.message : "That didn't go through. You can email hello@gocadre.ai instead.";
-        err.hidden = false; btn.disabled = false; btn.textContent = "Send to the team";
-      }
-    };
-    log.appendChild(d); stick();
-    if (panel.classList.contains("open")) d.querySelector(`#${id}n`).focus();  // never pull focus into a closed chat
-  }
-
-  const FALLBACK_MSG = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
-
-  async function ask(text) {
-    text = (text || "").trim();
-    if (!text || busy) return;
-    busy = true; q.value = "";
-    const mySession = session;  // "Start over" mid-answer must not leak into the new chat (review #6)
-    add("user", esc(text));
-    history.push({ role: "user", content: text });
-    const bubble = add("", '<span class="typing" role="img" aria-label="Writing an answer"><span></span><span></span><span></span></span>');
-    let frame = 0;  // stream updates are painted once per screen refresh, not per token
-    const paint = () => { frame = 0; bubble.innerHTML = render(answer); stick(false); };
-    let answer = "", route = {}, failed = false, finished = false;
-
-    // Runs as soon as the answer is complete (the "done" event), not when the stream closes:
-    // the server saves the transcript after "done", and the visitor shouldn't wait for it (review #3).
-    function finish(meta) {
-      if (finished) return;
-      finished = true;
-      if (mySession !== session) return;
-      if (!failed && answer.trim()) {
-        history.push({ role: "assistant", content: answer.trim() });
-        announce("Cadence: " + answer.trim());
-        const cost = meta.cost_usd != null ? "$" + Number(meta.cost_usd).toFixed(5) : "n/a";
-        note(`topic: ${esc(route.topic || "n/a")} (${esc(route.router || "n/a")})<br>model: ${esc(meta.model || "n/a")} · ${meta.latency_ms ?? "?"} ms · ${cost}${meta.handoff ? "<br>handoff: yes" : ""}`);
-        if (meta.handoff) showHandoff();
-      } else {
-        if (!failed) { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(FALLBACK_MSG); }  // never stuck (review #1)
-        announce(bubble.textContent);
-      }
-      busy = false;
-      // Refocus the input only if the chat is still open and no form needs focus
-      // (a visitor who closed the chat mid-answer keeps focus on the launcher)
-      if (panel.classList.contains("open") && !document.querySelector("form.handoff:last-child")) q.focus();
-    }
-
+  async function submitForm(event) {
+    const card = event.target.closest(".cad-form"), btn = card.querySelector(".cad-form-send"), err = card.querySelector(".cad-form-err");
+    if (btn.disabled) return;  // double-click = one request (research findings #10)
+    const f = Object.fromEntries([...card.querySelectorAll("input,textarea")].map((el) => [el.name, el.value.trim()]));
+    const missing = ["name", "email", "subject", "message"].find((k) => !f[k]);
+    if (missing) { err.textContent = `Enter your ${missing} first.`; card.querySelector(`[name=${missing}]`).focus(); return; }
+    btn.disabled = true; btn.textContent = "Sending…"; err.textContent = "";
     try {
-      const resp = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session, messages: history.slice(-8) }) });
-      if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
-      const reader = resp.body.getReader(), dec = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let cut;
-        while ((cut = buf.indexOf("\n\n")) >= 0) {
-          const block = buf.slice(0, cut); buf = buf.slice(cut + 2);
-          if (mySession !== session) continue;
-          const ev = (block.match(/^event: (.*)$/m) || [])[1];
-          const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
-          if (ev === "token") { answer += data.text; if (!frame) frame = requestAnimationFrame(paint); }
-          else if (ev === "route") { route = data; lastTopic = data.topic || ""; }
-          else if (ev === "done") { if (frame) { cancelAnimationFrame(frame); paint(); } finish(data); }
-          else if (ev === "error") { failed = true; bubble.className = "msg error"; bubble.innerHTML = render(data.message); }
-        }
-      }
+      const r = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, idempotency_key: card.dataset.key }) });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.message || "");
+      card.innerHTML = `<div class="cad-form-done">${esc(data.message)}</div>`;
     } catch (e) {
-      failed = true; bubble.className = "msg error";
-      bubble.innerHTML = render("Sorry, I couldn't connect just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.");
+      err.textContent = e.message && e.message.startsWith("Enter") ? e.message : "That didn't go through. You can email hello@gocadre.ai instead.";
+      btn.disabled = false; btn.textContent = "Send to the team";
     }
-    finish({});  // no-op if "done" already arrived; otherwise shows the fallback instead of hanging
-    if (mySession !== session) busy = false;
   }
 
+  // ---- "Behind the scenes": one quiet status line instead of cluttering the conversation ----
+  let lastRoute = {};
+  function showStatus(route, meta) {
+    if (route) lastRoute = route;
+    const r = lastRoute, parts = [];
+    if (r.topic) parts.push(`topic: ${r.topic}${r.confidence != null ? " " + Number(r.confidence).toFixed(2) : ""} via ${r.router}`);
+    if (meta) parts.push(meta.model || "?", `${meta.latency_ms ?? "?"} ms`,
+                         meta.cost_usd != null ? "$" + Number(meta.cost_usd).toFixed(5) : "", meta.handoff ? "handoff" : "");
+    status.textContent = parts.filter(Boolean).join(" · ");
+  }
+  $("bts").onclick = () => {
+    const on = status.hidden; status.hidden = !on;
+    $("bts").setAttribute("aria-pressed", String(on)); $("bts").textContent = on ? "Hide behind the scenes" : "Show behind the scenes";
+    closeMenu();
+  };
+
+  // Configure Deep Chat only after its script has loaded and defined the element; properties set
+  // before that are lost when the element upgrades (09-23: the chat rendered blank).
+  customElements.whenDefined("deep-chat").then(() => {
+  // ---- Talking to our backend: stream, then reveal at a steady pace ----
+  chat.connect = {
+    stream: true,
+    handler: (body, signals) => { inflight = answerOne(body, signals); return inflight; },
+  };
+  async function answerOne(body, signals) {
+    {
+      const text = (body.messages?.[body.messages.length - 1]?.text || "").trim();
+      lastQuestion = text;
+      // Tuck the starter questions away once the conversation begins
+      chat.shadowRoot?.querySelectorAll(".cad-starters").forEach((el) => el.classList.add("cad-gone"));
+      history.push({ role: "user", content: text });
+      let received = "", shown = 0, meta = null, failed = false, opened = false, frame = 0, finish, routeData = {};
+      const mySession = session;
+      const done = new Promise((resolve) => { finish = resolve; });
+      // The model sends text in lumps; reveal it a few characters per frame, faster when behind
+      const tick = () => {
+        frame = 0;
+        if (mySession !== session) return finish();  // "Start over" pressed: stop writing into the new chat
+        if (received.length > shown) {
+          shown = REDUCED ? received.length : shown + Math.max(2, Math.ceil((received.length - shown) / 14));
+          if (!opened) { signals.onOpen(); opened = true; }
+          signals.onResponse({ html: render(received.slice(0, shown)), overwrite: true });
+        }
+        if (shown < received.length) frame = requestAnimationFrame(tick);
+        else if (meta || failed) finish();
+      };
+      const reveal = () => { if (!frame) frame = requestAnimationFrame(tick); };
+      try {
+        abortCtl = new AbortController();
+        const resp = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: session, messages: history.slice(-8) }), signal: abortCtl.signal });
+        if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+        const reader = resp.body.getReader(), dec = new TextDecoder();
+        let buf = "";
+        for (;;) {
+          const { value, done: end } = await reader.read();
+          if (end) break;
+          buf += dec.decode(value, { stream: true });
+          let cut;
+          while ((cut = buf.indexOf("\n\n")) >= 0) {
+            const block = buf.slice(0, cut); buf = buf.slice(cut + 2);
+            const ev = (block.match(/^event: (.*)$/m) || [])[1];
+            const data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
+            if (mySession !== session) break;
+            if (ev === "token") { received += data.text; reveal(); }
+            else if (ev === "route") { lastTopic = data.topic || ""; routeData = data; showStatus(data, null); }
+            else if (ev === "done") { meta = data; reveal(); }
+            else if (ev === "error") { failed = true; received = data.message || FALLBACK; shown = 0; reveal(); }
+          }
+        }
+        if (!meta && !failed) { failed = true; if (!received) received = FALLBACK; reveal(); }
+      } catch (e) {
+        failed = true; received = FALLBACK; shown = 0; reveal();
+      }
+      await done;
+      // Final full render, awaited, so the last characters are never dropped on close (09-23 bug:
+      // an answer ended at "hello@gocadre.a")
+      if (received && mySession === session) await signals.onResponse({ html: render(received), overwrite: true });
+      if (mySession === session) {
+        if (!failed) history.push({ role: "assistant", content: received.trim() });
+        if (meta) showStatus(null, meta);
+      }
+      signals.onClose();
+      if (mySession === session && meta && meta.handoff) {
+        // They asked for a person → show the form now. Otherwise (e.g. pricing) → offer it.
+        const explicit = routeData.asks_for_human || routeData.topic === "booking";
+        chat.addMessage({ role: "ai", html: explicit ? formHtml() : offerHtml() });
+      }
+    }
+  }
+
+  // ---- Look and feel: Cadre's colors and type; Deep Chat handles layout, scroll, and typing ----
+  chat.style.cssText = "width:100%;height:100%;border:none;background:#fff;font-family:Inter,Arial,sans-serif;font-size:15px;";
+  chat.chatStyle = { width: "100%", height: "100%", border: "none", backgroundColor: "#ffffff" };
+  chat.introMessage = { html: `<div class="cad-msg cad-greet"><p>Hi! I'm Cadence, Cadre's AI assistant. Ask me anything about Cadre.</p></div>
+    <div class="cad-starters">${STARTERS.map((s) => `<button class="deep-chat-button deep-chat-suggestion-button cad-chip">${s}</button>`).join("")}</div>` };
+  chat.messageStyles = {
+    default: {
+      shared: { bubble: { maxWidth: "88%", padding: "10px 14px", borderRadius: "16px", fontSize: "15px", lineHeight: "1.5", marginTop: "10px" } },
+      ai: { bubble: { backgroundColor: "#FAF9F6", color: "#2b2b2b" } },
+      user: { bubble: { backgroundColor: "#0C0407", color: "#ffffff" } },
+    },
+    html: { shared: { bubble: { maxWidth: "92%", padding: "10px 14px", borderRadius: "16px", backgroundColor: "#FAF9F6", color: "#2b2b2b", fontSize: "15px", lineHeight: "1.5", marginTop: "10px" } } },
+    intro: { bubble: { maxWidth: "100%", backgroundColor: "transparent", padding: "0" } },
+    loading: { message: { styles: { bubble: { backgroundColor: "#FAF9F6", padding: "12px 16px", borderRadius: "16px" } } } },
+  };
+  chat.textInput = {
+    placeholder: { text: "Ask a question", style: { color: "#6b6b6b" } },
+    characterLimit: 1000,
+    styles: {
+      container: { width: "100%", maxWidth: "100%", boxSizing: "border-box", margin: "0", borderRadius: "24px", border: "1px solid #d9d5cc", backgroundColor: "#fff", boxShadow: "0 1px 2px rgba(12,4,7,.06)" },
+      text: { fontSize: "16px", padding: "12px 52px 12px 16px", color: "#222", fontFamily: "Inter,Arial,sans-serif" },
+      focus: { border: "1px solid #6b6b6b" },
+    },
+  };
+  chat.inputAreaStyle = { padding: "10px 16px 8px", backgroundColor: "#fff", boxSizing: "border-box", width: "100%" };
+  chat.submitButtonStyles = { position: "inside-end",
+    submit: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" }, hover: { backgroundColor: "#2a2023" } },
+              svg: { styles: { default: { filter: "brightness(0) invert(1)", width: "16px", height: "16px" } } } },
+    disabled: { container: { default: { backgroundColor: "#0C0407", opacity: "0.25", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } },
+                svg: { styles: { default: { filter: "brightness(0) invert(1)", width: "16px", height: "16px" } } } },
+    loading: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } } },
+    stop: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } }, svg: { styles: { default: { filter: "brightness(0) invert(1)" } } } } };
+  chat.auxiliaryStyle = `
+    .cad-msg p { margin: 0 0 8px; } .cad-msg p:last-child { margin-bottom: 0; }
+    .cad-msg ul { margin: 4px 0 8px; padding-left: 20px; } .cad-msg li { margin: 3px 0; }
+    .cad-msg a, .cad-form a { color: #B83232; }
+    .cad-greet { display: inline-block; background: #FAF9F6; border-radius: 16px; padding: 10px 14px; max-width: 88%; }
+    .cad-starters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-top: 14px; }
+    .cad-starters.cad-gone { display: none; }
+    .cad-chip { background: #fff !important; border: 1px solid #d9d5cc !important; border-radius: 36px !important; padding: 8px 14px !important;
+                font: 14px Inter, Arial, sans-serif !important; color: #2b2b2b !important; cursor: pointer; text-align: left; margin: 0 !important;
+                transition: border-color .15s ease, color .15s ease; }
+    .cad-chip:hover { border-color: #DB4545 !important; color: #B83232 !important; }
+    .cad-form { display: flex; flex-direction: column; gap: 8px; min-width: 0; width: 100%; }
+    .cad-form input::placeholder, .cad-form textarea::placeholder { color: #9a948a; }
+    .cad-form-title { font-family: 'Inter Tight', Arial, sans-serif; font-weight: 700; font-size: 17px; }
+    /* A form sits on a white card with a hairline border, like production widgets */
+    .message-bubble:has(.cad-form) { background: #fff !important; border: 1px solid #e5e2da; width: 100%; }
+    .cad-form-note { font-size: 13px; color: #555; }
+    .cad-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #555; }
+    .cad-form input, .cad-form textarea { width: 100%; box-sizing: border-box; font: 16px Inter, Arial, sans-serif; color: #222;
+                background: #fff; border: 1px solid #bdb8ad; border-radius: 10px; padding: 7px 10px; }
+    .cad-form input:focus, .cad-form textarea:focus { outline: none; border-color: #DB4545; }
+    .cad-form-err { color: #B83232; font-size: 13px; }
+    .cad-form-send { align-self: flex-start; background: #0C0407; color: #fff; border: none; border-radius: 36px; padding: 9px 16px;
+                     font: 500 14px Inter, Arial, sans-serif; cursor: pointer; }
+    .cad-form-send[disabled] { opacity: .6; cursor: wait; }
+    .cad-form-done { font-size: 15px; }
+    .cad-offer { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .cad-offer span { font-size: 14px; color: #2b2b2b; }
+    .cad-offer-btn { background: #0C0407; color: #fff; border: none; border-radius: 36px; padding: 8px 14px;
+                     font: 500 14px Inter, Arial, sans-serif; cursor: pointer; white-space: nowrap; }
+    /* Send button: vertically centered inside the text box */
+    .inside-end { top: 50% !important; bottom: auto !important; transform: translateY(-50%) !important; right: 8px !important; }
+  `;
+  chat.htmlClassUtilities = { "cad-form-send": { events: { click: submitForm } },
+                              "cad-offer-btn": { events: { click: expandOffer } } };
+  chat.avatars = false;
+
+  });
+
+  // ---- Open / close / menu / notice ----
   function open() {
-    panel.hidden = false; launcher.setAttribute("aria-expanded", "true");
-    if (!log.children.length) welcome();
-    requestAnimationFrame(() => panel.classList.add("open"));  // next frame, so it animates
-    q.focus();
+    panel.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
+    launcher.classList.add("is-open"); launcher.setAttribute("aria-expanded", "true"); launcher.setAttribute("aria-label", "Close the assistant");
+    setTimeout(() => chat.focusInput && chat.focusInput(), REDUCED ? 0 : 260);
   }
   function close() {
-    panel.classList.remove("open"); launcher.setAttribute("aria-expanded", "false"); launcher.focus();
-    setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, REDUCED ? 0 : 240);
+    closeMenu();
+    panel.classList.remove("open");
+    launcher.classList.remove("is-open"); launcher.setAttribute("aria-expanded", "false"); launcher.setAttribute("aria-label", "Ask Cadre's AI");
+    launcher.focus();
+    setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, REDUCED ? 0 : 300);
   }
-
+  const menu = $("menu"), menuBtn = $("menu-btn");
+  function closeMenu() { menu.hidden = true; menuBtn.setAttribute("aria-expanded", "false"); }
+  menuBtn.onclick = (e) => { e.stopPropagation(); const show = menu.hidden; menu.hidden = !show; menuBtn.setAttribute("aria-expanded", String(show)); };
+  document.addEventListener("click", (e) => { if (!menu.hidden && !menu.contains(e.target)) closeMenu(); });
   launcher.onclick = () => (panel.classList.contains("open") ? close() : open());
   $("close").onclick = close;
-  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-  $("restart").onclick = () => { history = []; session = crypto.randomUUID(); busy = false; welcome(); q.focus(); };
-  $("ask").onsubmit = (e) => { e.preventDefault(); ask(q.value); };
-  $("human").onclick = () => { add("user", "Talk to a strategist"); lastTopic = lastTopic || "booking"; showHandoff(); };
-  $("bts").onchange = (e) => { showBts = e.target.checked; document.querySelectorAll(".bts").forEach((n) => (n.hidden = !showBts)); };
+  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!menu.hidden) { closeMenu(); menuBtn.focus(); } else close(); } });
+  $("notice-x").onclick = () => { $("notice").hidden = true; };
+  $("restart").onclick = async () => {
+    closeMenu();
+    session = crypto.randomUUID(); history = []; lastTopic = ""; lastQuestion = ""; status.textContent = "";
+    if (inflight) { abortCtl && abortCtl.abort(); await inflight.catch(() => {}); }  // let the old answer wind down first
+    chat.clearMessages(true); chat.focusInput && chat.focusInput();
+  };
+  $("human").onclick = () => { closeMenu(); lastTopic = lastTopic || "booking"; chat.addMessage({ role: "ai", html: formHtml() }); };
 })();
 </script>
 </body>

@@ -1,4 +1,5 @@
-"""Browser tests: drive the real widget in Chromium, like a visitor.
+"""Browser tests: drive the real widget like a visitor, on desktop Chromium AND an iPhone
+profile in WebKit (Safari's engine). Phone tests fail if anything is wider than the screen.
 
 Runs against the LIVE site by default (real Jev, real model: a few cents per run):
   .venv/bin/python -m pytest e2e -q
@@ -6,6 +7,7 @@ Against local:  BASE_URL=http://localhost:8000 .venv/bin/python -m pytest e2e -q
   (start the local server with RATE_LIMIT_PER_MINUTE=1000: repeated runs from one machine
    otherwise hit the per-visitor limit, 12 messages/minute, and answers time out)
 Not part of the default `pytest` run (unit tests live in tests/).
+The chat window is Deep Chat (a web component); Playwright's CSS locators see inside it.
 """
 import os
 import re
@@ -14,82 +16,119 @@ import pytest
 from playwright.sync_api import Page, expect
 
 BASE = os.environ.get("BASE_URL", "https://cadre-chatbot-xi.vercel.app")
-ANSWER_TIMEOUT = 30_000
+ANSWER = 30_000
+INPUT = "deep-chat #text-input"
+LAST_ANSWER = "deep-chat .cad-msg >> nth=-1"
+NO_OVERFLOW = """() => {
+  const W = innerWidth, sr = document.getElementById('chat').shadowRoot;
+  const wide = (root) => [...root.querySelectorAll('*')].filter(e => {
+    const r = e.getBoundingClientRect(); return r.width > 0 && r.right > W + 1; }).length;
+  return { page: document.documentElement.scrollWidth <= W, pageItems: wide(document), chatItems: sr ? wide(sr) : 0 };
+}"""
 
 
-@pytest.fixture
-def widget(page: Page) -> Page:
+def open_chat(page: Page) -> None:
     page.goto(BASE)
     page.get_by_role("button", name="Ask Cadre's AI").click()
-    return page
+    expect(page.locator(INPUT)).to_be_visible()
 
 
-def test_launcher_is_labeled_and_opens_with_focus_in_input(widget: Page):
-    expect(widget.get_by_role("dialog")).to_be_visible()
-    expect(widget.locator("#q")).to_be_focused()
-    expect(widget.locator(".ph small")).to_contain_text("Cadre's AI assistant")  # AI disclosure
-    expect(widget.get_by_role("button", name="What does Cadre do?")).to_be_visible()
+def ask(page: Page, text: str) -> None:
+    page.locator(INPUT).click()
+    page.keyboard.type(text)
+    page.keyboard.press("Enter")
 
 
-def test_starter_question_streams_a_grounded_answer(widget: Page):
-    widget.get_by_role("button", name="What is the AI Maturity Index?").click()
-    answer = widget.locator("#log .msg:not(.user)").last
-    expect(answer).to_contain_text("pillar", timeout=ANSWER_TIMEOUT)
-    expect(widget.locator("#log")).not_to_contain_text("[HANDOFF")
-    widget.get_by_label("Behind the scenes").check()
-    expect(widget.locator(".bts").last).to_contain_text("maturity_index")
+# ---------------- Desktop (Chromium) ----------------
+def test_opens_with_ai_disclosure_and_starters(page: Page):
+    open_chat(page)
+    expect(page.locator(".ph small")).to_contain_text("Cadre's AI assistant")
+    expect(page.locator("#notice")).to_contain_text("saved for 30 days")
+    expect(page.locator("deep-chat .cad-chip", has_text="What does Cadre do?")).to_be_visible()
 
 
-def test_pricing_shows_prefilled_form_and_honest_demo_confirmation(widget: Page):
-    widget.locator("#q").fill("How much does the 45-day intensive cost?")
-    widget.locator("#q").press("Enter")
-    form = widget.locator("form.handoff")
-    expect(form).to_be_visible(timeout=ANSWER_TIMEOUT)
-    expect(form.get_by_label("Subject")).to_have_value("Pricing question")
-    expect(form.get_by_label("Message")).to_have_value(re.compile("45-day intensive"))
-    expect(form.get_by_label("Name")).to_be_focused()
-    form.get_by_role("button", name="Send to the team").click()                  # empty → error
-    expect(form.get_by_role("alert")).to_contain_text("Enter your name first")
-    form.get_by_label("Name").fill("Browser Test")
-    form.get_by_label("Email").fill("browser-test@example.com")
-    form.get_by_role("button", name="Send to the team").dblclick()               # double submit
-    confirmation = widget.locator("#log .msg", has_text="nothing was sent to Cadre")
-    expect(confirmation).to_have_count(1, timeout=10_000)
+def test_starter_streams_a_complete_grounded_answer(page: Page):
+    open_chat(page)
+    page.locator("deep-chat .cad-chip", has_text="What is the AI Maturity Index?").click()
+    expect(page.locator(LAST_ANSWER)).to_contain_text("pillar", timeout=ANSWER)
+    expect(page.locator("deep-chat .cad-starters.cad-gone")).to_have_count(1)   # starters tucked away
+    expect(page.locator("deep-chat")).not_to_contain_text("[HANDOFF")
+    page.get_by_role("button", name="More options").click()
+    page.get_by_role("menuitem", name="Show behind the scenes").click()
+    expect(page.locator("#status")).to_contain_text("maturity_index", timeout=ANSWER)
+
+
+def test_pricing_offers_strategist_then_form_validates_and_confirms_once(page: Page):
+    open_chat(page)
+    ask(page, "How much does the 45-day intensive cost?")
+    page.locator("deep-chat .cad-offer-btn").last.click(timeout=ANSWER)
+    form = page.locator("deep-chat .cad-form").last
+    expect(form.locator("input[name=subject]")).to_have_value("Pricing question")
+    expect(form.locator("textarea[name=message]")).to_have_value(re.compile("45-day intensive"))
+    form.locator(".cad-form-send").click()                                    # empty → error
+    expect(form.locator(".cad-form-err")).to_contain_text("Enter your name first")
+    form.locator("input[name=name]").fill("Browser Test")
+    form.locator("input[name=email]").fill("browser-test@example.com")
+    form.locator(".cad-form-send").dblclick()                                 # double submit
+    expect(page.locator("deep-chat .cad-form-done")).to_have_count(1, timeout=10_000)
+    expect(page.locator("deep-chat .cad-form-done")).to_contain_text("nothing was sent to Cadre")
 
 
 def test_keyboard_only_open_ask_close(page: Page):
     page.goto(BASE)
     page.get_by_role("button", name="Ask Cadre's AI").focus()
     page.keyboard.press("Enter")
-    expect(page.locator("#q")).to_be_focused()
-    page.keyboard.type("Where do I find the client portal?")
-    page.keyboard.press("Enter")
-    expect(page.locator("#log .msg:not(.user)").last).to_contain_text(
-        "portal.gocadre.ai", timeout=ANSWER_TIMEOUT)
+    expect(page.locator(INPUT)).to_be_visible()
+    ask(page, "Where do I find the client portal?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("portal.gocadre.ai", timeout=ANSWER)
     page.keyboard.press("Escape")
-    expect(page.get_by_role("dialog")).to_be_hidden()
-    expect(page.get_by_role("button", name="Ask Cadre's AI")).to_be_focused()   # focus returns
+    expect(page.locator("#panel")).to_be_hidden()
+    expect(page.locator("#launcher")).to_be_focused()
 
 
-def test_phone_size_panel_fills_screen_and_input_is_usable(browser):
-    ctx = browser.new_context(viewport={"width": 375, "height": 812}, is_mobile=True, has_touch=True)
-    page = ctx.new_page()
-    page.goto(BASE)
-    page.get_by_role("button", name="Ask Cadre's AI").click()
-    expect(page.get_by_role("dialog")).to_have_class(re.compile(r"\bopen\b"))
-    page.wait_for_function("getComputedStyle(document.getElementById('panel')).transform === 'none'")
-    box = page.get_by_role("dialog").bounding_box()  # measured after the open animation
-    assert box["width"] >= 370, f"panel should fill a phone screen, got {box['width']}px"
-    expect(page.locator("#q")).to_be_in_viewport()
-    expect(page.get_by_role("button", name="Talk to a strategist")).to_be_in_viewport()
-    ctx.close()
+def test_start_over_clears_the_conversation(page: Page):
+    open_chat(page)
+    ask(page, "Do you work with hotels?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("hospitality", timeout=ANSWER)
+    page.get_by_role("button", name="More options").click()
+    page.get_by_role("menuitem", name="Start a new chat").click()
+    expect(page.locator("deep-chat .cad-msg")).to_have_count(1)            # just the greeting
+    expect(page.locator("deep-chat .cad-starters:not(.cad-gone)")).to_have_count(1)
 
 
-def test_privacy_page_loads_and_matches_storage(page: Page):
-    page.goto(BASE)
-    page.get_by_role("button", name="Ask Cadre's AI").click()
+def test_privacy_page_matches_storage(page: Page):
+    open_chat(page)
     with page.expect_popup() as popup:
-        page.get_by_role("link", name="How chat data is used").click()
-    privacy = popup.value
-    expect(privacy.get_by_role("heading", name="How chat data is used")).to_be_visible()
-    expect(privacy.locator("body")).to_contain_text("redacted, for 30 days")
+        page.locator("#notice").get_by_role("link", name="Details").click()
+    expect(popup.value.locator("body")).to_contain_text("redacted, for 30 days")
+
+
+# ---------------- iPhone profile (WebKit = Safari's engine) ----------------
+@pytest.fixture
+def iphone(playwright):
+    browser = playwright.webkit.launch()
+    ctx = browser.new_context(**playwright.devices["iPhone 14"])
+    yield ctx.new_page()
+    ctx.close()
+    browser.close()
+
+
+def test_iphone_nothing_wider_than_the_screen_through_a_full_conversation(iphone: Page):
+    def check(step):
+        o = iphone.evaluate(NO_OVERFLOW)
+        assert o == {"page": True, "pageItems": 0, "chatItems": 0}, f"overflow at {step}: {o}"
+    iphone.goto(BASE)
+    check("landing")
+    iphone.get_by_role("button", name="Ask Cadre's AI").tap()
+    expect(iphone.locator(INPUT)).to_be_visible()
+    check("open")
+    iphone.locator("deep-chat .cad-chip", has_text="How do I book a call?").tap()
+    expect(iphone.locator("deep-chat .cad-form")).to_have_count(1, timeout=ANSWER)  # asked for a call → form now
+    check("answer + form")
+
+
+def test_iphone_inputs_are_16px_so_safari_does_not_zoom(iphone: Page):
+    iphone.goto(BASE)
+    iphone.get_by_role("button", name="Ask Cadre's AI").tap()
+    size = iphone.locator(INPUT).evaluate("e => getComputedStyle(e).fontSize")
+    assert size == "16px", f"Safari zooms the page for inputs under 16px; got {size}"

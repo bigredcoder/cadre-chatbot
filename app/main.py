@@ -6,6 +6,7 @@ from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app import config, guards
@@ -180,6 +181,11 @@ def health() -> dict:
 def home() -> FileResponse:
     """The demo page with the chat bubble."""
     return FileResponse(config.ROOT / "public" / "index.html")
+
+
+# Local dev only (Vercel serves public/ itself; check_dir=False so a missing folder can't crash it)
+app.mount("/vendor", StaticFiles(directory=config.ROOT / "public" / "vendor", check_dir=False),
+          name="vendor")
 
 
 @app.get("/privacy.html")
