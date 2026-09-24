@@ -15,5 +15,4 @@ build/
 node_modules/
 # os
 .DS_Store
-.env*
-!.env.example
+.mypy_cache/

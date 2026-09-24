@@ -651,3 +651,25 @@ and never judged it as a visitor would.
   name models, so arguably right). Unit 53/53 (3 new), browser 9/9 incl. a new source-link check.
 
 **Say in the review:** "I used Jev twice: once to route the question, once as a judge on the model's own reply before interrupting the visitor with a sales offer. It fails open: if the judge is down, the offer stays."
+
+**09-24 · Fixes from a skeptical pre-submission audit, plus header icons** · commit _pending_
+- **Did:** audited the repo the way Cadre's reviewers will: git history and secrets, docs vs
+  code, the live bot (21 real questions including injection and personal data), and code quality.
+- **Fixed:**
+  - One kind of source link ("cadre.ai/foo-") threw an error and froze the chat input.
+    The renderer no longer throws, and the input is always released.
+  - Card numbers were saved unredacted: 16 digits passed the 15-digit phone rule. They are now removed.
+  - The portal reply said "I can connect you with a strategist" but showed no button. If a reply
+    offers a person, the button now always shows.
+  - No overall time limit: a hung provider meant 80s+ of waiting. Each stage now has a
+    deadline, 39s worst case, and then the friendly fallback.
+  - Turn logic moved from `main.py` to `app/chat.py`, so CLAUDE.md's "main.py: routes only"
+    is true again. The dead 30-turn cap was removed (it could never fire).
+  - Answer rendering moved to `public/render.js` with 7 Node tests (XSS, lookalike domains
+    such as evilcadre.ai, crash cases). pytest runs them.
+  - CLAUDE.md and README brought in line with the code.
+- **Brian's UI change:** the header is now icon buttons: "+" (new chat) and a person-with-headset
+  (talk to a strategist), with hover tooltips and screen-reader names.
+- **Checked:** unit 58/58, browser 9/9 (local), evals 26/26 with topic and handoff accuracy 100%.
+
+**Say in the review:** "Before submitting, I had Claude audit the repo as a skeptical reviewer. It found a UI freeze, card numbers stored in clear, and docs that had drifted from the code. I fixed each one with a regression test."

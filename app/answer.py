@@ -63,10 +63,11 @@ async def stream_answer(history: list[dict], topic: str) -> AsyncIterator[dict]:
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
     started = time.monotonic()
-    full, sent, usage = "", 0, {}
+    full, sent = "", 0
+    usage: dict = {}
     try:
         async with (
-            httpx.AsyncClient(timeout=config.ANSWER_TIMEOUT_S) as client,
+            httpx.AsyncClient(timeout=httpx.Timeout(config.ANSWER_TIMEOUT_S, connect=5)) as client,
             client.stream("POST", config.OPENROUTER_URL, json=body, headers=headers) as resp,
         ):
             if resp.status_code != 200:
@@ -74,6 +75,8 @@ async def stream_answer(history: list[dict], topic: str) -> AsyncIterator[dict]:
             async for line in resp.aiter_lines():
                 if not line.startswith("data: ") or line == "data: [DONE]":
                     continue  # skips keep-alive comments and the end marker
+                if time.monotonic() - started > config.ANSWER_DEADLINE_S:
+                    raise AnswerError("answer took too long")
                 chunk = json.loads(line[6:])
                 if "error" in chunk:
                     raise AnswerError(str(chunk["error"].get("message", "model error")))

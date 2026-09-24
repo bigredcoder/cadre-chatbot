@@ -11,22 +11,26 @@ it can't or shouldn't answer. The live app is a chat bubble on a demo page.
 
 ## Stack (deliberately boring)
 - Python 3.12+, FastAPI, deployed on Vercel (Python runtime, SSE streaming)
-- Plain HTML + vanilla JS for the UI (`public/index.html`). No frontend framework.
+- UI: one HTML page (`public/index.html`) around Deep Chat, an MIT chat web component
+  self-hosted at `public/vendor/` (no CDN, no build step). Answer rendering is in
+  `public/render.js`. No frontend framework, no npm.
 - OpenRouter for answer generation; Jev via Vercel AI Gateway for routing
 - Supabase Postgres: one table, `chat_turns` (redacted, 30-day retention, insert-only key)
-- pytest for unit tests; `evals/` for answer-quality tests
+- pytest for unit tests (it also runs the JS tests in `tests/js/` via Node); Playwright
+  browser tests in `e2e/`; `evals/` for answer-quality tests
 
 Don't add a framework, ORM, vector DB, or new dependency without asking. Small and
 explainable beats clever. Every file should be readable top to bottom by a non-specialist.
 
 ## Layout (target; check what exists before assuming)
-- `app/main.py`: routes only. No business logic here.
+- `app/main.py`: routes only (HTTP in, Server-Sent Events out). No business logic here.
+- `app/chat.py`: one chat turn: route → answer → decide the handoff → save. Per-stage deadlines.
 - `app/config.py`: every model name, threshold, and limit. No magic numbers elsewhere.
 - `app/router.py`: Jev routing plus the fallback to the chat model
 - `app/answer.py`: builds the prompt, calls OpenRouter, streams
 - `app/transcripts.py`: redacts, then saves one row per turn to Supabase `chat_turns`
   (insert-only key; schema in `db/schema.sql`). `/api/leads` in main.py is a DEMO form.
-- `app/guards.py`: size, rate, and turn limits
+- `app/guards.py`: per-visitor rate limit (in memory, per instance: see its docstring)
 - `prompts/system.md`: Cadence's instructions. **Brian owns this file. Propose edits, don't rewrite it.**
 - `knowledge/cadre.md`: the ONLY source of facts about Cadre
 - `evals/cases.yaml`: **Brian owns the final list.** `evals/run.py` runs them.
@@ -48,9 +52,9 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
    read `.env` values into your context. Use `.env.example` for names.
 5. **Cadre's OpenRouter key is off-limits** until Brian explicitly approves the final
    swap. All development uses Brian's own key.
-6. **Transcripts are stored only redacted** (emails and phone numbers removed before
-   saving), deleted after 30 days, and disclosed on /privacy. Handoff form submissions
-   are never stored (demo).
+6. **Transcripts are stored only redacted** (emails, phone and card numbers removed before
+   saving), deleted after 30 days, and described on `/privacy.html` (not linked from the
+   widget: Brian's call, plan.md §6b). Handoff form submissions are never stored (demo).
 7. **Empty model replies are errors.** Some reasoning models return blank text when
    they run out of tokens (seen 2026-09-23 with gpt-5-nano). Never show a blank bubble.
 8. Every behavior change ships with a unit test or an eval case.
@@ -70,10 +74,11 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
   file to prepare the walkthrough, so never let it fall behind.
 
 ## Commands (always use the project venv: `.venv/bin/...`)
-- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml`
+- First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright && .venv/bin/playwright install chromium webkit`
   (don't `pip install -e .`: the repo isn't laid out as a package, and it fails)
 - Run locally: `.venv/bin/uvicorn app.main:app --reload` (then open http://localhost:8000)
-- Unit tests: `.venv/bin/python -m pytest -q`
+- Unit tests (Python + JS): `.venv/bin/python -m pytest -q` (JS tests need Node; skipped without it)
+- Browser tests: `.venv/bin/python -m pytest e2e -q` (live site; `BASE_URL=` for local)
 - Answer-quality tests: `.venv/bin/python -m evals.run` (costs a few cents; uses the configured model)
 - Lint: `.venv/bin/ruff check .`
 - Deploy: push to `main` on GitHub (Vercel auto-deploys). Preview: `vercel deploy`

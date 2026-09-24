@@ -18,12 +18,15 @@ EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
 # Phone-like runs (optional +, spaces, dots, dashes, parentheses); judged by digit count below
 PHONE = re.compile(r"(?<![\w(])\+?\(?\d[\d\s().-]{5,}\d(?!\w)")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Card-like numbers: 13-19 digits, optionally grouped by spaces or dashes (audit 09-24: a
+# 16-digit card slipped past the phone rule, which stops at 15 digits)
+CARD = re.compile(r"(?<!\d)\d(?:[ -]?\d){12,18}(?!\d)")
 KEEP_EMAILS = {"hello@gocadre.ai"}   # Cadre's own published contact details
 KEEP_PHONE_DIGITS = {"6193243223"}
 
 
 def redact(text: str | None) -> str | None:
-    """Replace personal emails and phone numbers; keep Cadre's published contact info."""
+    """Replace personal emails, card-like numbers, and phone numbers; keep Cadre's contact info."""
     if text is None:
         return None
 
@@ -36,7 +39,7 @@ def redact(text: str | None) -> str | None:
             return text                      # too short/long to be a phone, or a date
         return text if digits[-10:] in KEEP_PHONE_DIGITS else "[phone removed]"
 
-    return PHONE.sub(phone, EMAIL.sub(email, text))
+    return PHONE.sub(phone, CARD.sub("[number removed]", EMAIL.sub(email, text)))
 
 
 async def save_turn(row: dict) -> bool:

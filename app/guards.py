@@ -5,9 +5,8 @@ A per-visitor rate limit: 12 messages a minute and 200 a day per IP address.
 Honest limitation: this counter lives in memory, so each warm serverless instance counts
 separately and a cold start resets it. It stops a casual script or a stuck retry loop, not a
 determined attacker. The hard ceilings are the model key's own spend limit and the server-side
-caps in main.py/config.py (message length, 8 messages of history, max tokens per reply).
-The 30-turn session cap is advisory: the client sends the history, so a script can skip it. Production would move
-this to a shared store or Vercel's firewall rules (plan.md, "What's next").
+caps in main.py/config.py (message length, 8 messages of history, max tokens per reply, and
+a deadline per turn). Production would move this to a shared store or Vercel's firewall rules (plan.md, "What's next").
 """
 import time
 from collections import defaultdict, deque

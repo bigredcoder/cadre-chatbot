@@ -69,3 +69,10 @@ def test_redaction_never_exceeds_column_limit(monkeypatch):
                                        "outcome": "answered"}))
     import json
     assert len(json.loads(sent["body"])["user_message"]) <= 1000
+
+
+def test_card_numbers_are_removed():
+    # Audit 09-24: 16 digits is past the phone rule's 15-digit cap, so cards were stored as-is
+    for card in ("4111 1111 1111 1111", "4111-1111-1111-1111", "4111111111111111", "378282246310005"):
+        assert transcripts.redact(f"my card is {card} thanks") == "my card is [number removed] thanks"
+    assert transcripts.redact("call 619-555-0134") == "call [phone removed]"   # phones unchanged

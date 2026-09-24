@@ -56,9 +56,6 @@
   .hbtn { flex:none; width:34px; height:34px; border:none; border-radius:8px; background:transparent; color:#fff; font:15px Inter,Arial,sans-serif;
           cursor:pointer; display:flex; align-items:center; justify-content:center; letter-spacing:1px; }
   .hbtn:hover { background:rgba(255,255,255,.12); }
-  .newchat { flex:none; display:flex; align-items:center; gap:5px; height:32px; padding:0 12px; border:1px solid rgba(255,255,255,.3);
-             border-radius:36px; background:transparent; color:#fff; font:500 13px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
-  .newchat:hover { background:rgba(255,255,255,.12); }
   .menu-wrap { position:relative; }
   .menu { position:absolute; right:0; top:40px; min-width:220px; background:#fff; border:1px solid var(--line); border-radius:12px;
           box-shadow:0 12px 32px rgba(12,4,7,.16); padding:6px; z-index:5; display:flex; flex-direction:column; }
@@ -108,14 +105,17 @@
   <div class="ph">
     <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="#DB4545"/><text x="16" y="21" text-anchor="middle" font-family="Inter Tight,Arial" font-weight="700" font-size="14" fill="#fff">C</text></svg>
     <div class="t"><strong id="ptitle">Cadence</strong><small>Cadre's AI assistant</small></div>
-    <button class="newchat" id="restart" type="button" aria-label="Start a new chat">
-      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-      New chat
+    <!-- Icon buttons (Brian, 09-24): the title shows a tooltip on hover, aria-label names it for screen readers -->
+    <button class="hbtn" id="restart" type="button" aria-label="Start a new chat" title="New chat">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <button class="hbtn" id="human" type="button" aria-label="Talk to a strategist" title="Talk to a strategist">
+      <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="9" r="3.6"/><path d="M5.5 20c.8-3.3 3.4-5.2 6.5-5.2s5.7 1.9 6.5 5.2"/><path d="M5 10V9a7 7 0 0 1 14 0v1"/><path d="M19 10v2.2a2 2 0 0 1-2 2h-1.8"/></svg>
     </button>
     <div class="menu-wrap">
       <button class="hbtn" id="menu-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options">•••</button>
       <div class="menu" id="menu" role="menu" hidden>
-        <button role="menuitem" type="button" id="human">Talk to a strategist</button>
         <button role="menuitem" type="button" id="bts" aria-pressed="false">Show behind the scenes</button>
       </div>
     </div>
@@ -125,6 +125,7 @@
   <deep-chat id="chat"></deep-chat>
 </section>
 
+<script src="/render.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -134,7 +135,6 @@
   // over the chat before the visitor taps anything (Brian's iPhone, 09-23).
   const TOUCH = window.matchMedia("(pointer: coarse)").matches;
   const focusChat = () => { if (!TOUCH && chat.focusInput) chat.focusInput(); };
-  const ALLOWED = ["cadre.ai", "www.cadre.ai", "portal.gocadre.ai"];  // research findings #7
   const STARTERS = ["What does Cadre do?", "Do you work with my industry?", "What is the AI Maturity Index?",
                     "How do I book a call?", "How do you handle data security?"];
   const SUBJECTS = { pricing: "Pricing question", booking: "Talk to an AI strategist", portal: "Client portal help",
@@ -144,44 +144,7 @@
   let session = crypto.randomUUID(), history = [], lastTopic = "", lastQuestion = "";
   let inflight = null, abortCtl = null;  // the answer currently streaming, so "Start over" can cancel it
 
-  // ---- Safe rendering (unchanged rules): escape everything; links only to Cadre's sites ----
-  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-  function linkify(s) {
-    return s.replace(/(https?:\/\/)?((?:www\.)?cadre\.ai(?:\/[\w\-\/]*)?|portal\.gocadre\.ai(?:\/[\w\-\/]*)?)|hello@gocadre\.ai/g, (m, p, hostpath) => {
-      if (m === "hello@gocadre.ai") return `<a href="mailto:hello@gocadre.ai">${m}</a>`;
-      const url = new URL("https://" + hostpath.replace(/[.\/]+$/, ""));
-      return ALLOWED.includes(url.hostname) ? `<a href="${url.href}" target="_blank" rel="noopener">${esc(m)}</a>` : m;
-    });
-  }
-  // "More: cadre.ai/strategy." endings become a labeled source link under the answer
-  // (research findings: show sources; 09-24 polish). Labels come from the page path.
-  const SOURCE_LABELS = { "": "cadre.ai", "strategy": "AI Strategy", "leadership-facilitation": "AI Leadership & Facilitation",
-    "ai-engineering": "AI Engineering", "agents": "AI Agents", "about": "About Cadre", "contact": "Contact Cadre",
-    "case-studies": "Case studies", "industries": "Industries", "ai-maturity-index": "AI Maturity Index",
-    "retail-e-commerce": "Retail & E-commerce", "manufacturing-logistics": "Manufacturing & Logistics" };
-  const MORE = /\s*(?:More|Learn more|Source):\s*((?:https?:\/\/)?(?:www\.)?(?:cadre\.ai|portal\.gocadre\.ai)(?:\/[\w\-\/]*)?)\.?/gi;
-  function sourceLabel(url) {
-    const path = url.replace(/^https?:\/\//, "").replace(/^[^/]+\/?/, "").replace(/\/+$/, "");
-    const last = path.split("/").pop();
-    if (url.includes("portal.gocadre.ai") && !path) return "Cadre client portal";
-    return SOURCE_LABELS[last] ?? last.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-  }
-  function render(text, final = true) {
-    const sources = [];
-    // Mid-stream, hide a half-typed "More: cadre.ai/str" line; the link appears when the answer is done
-    if (!final) text = text.replace(/\s*(?:More|Learn more|Source):[^\n]*$/i, "");
-    text = text.replace(MORE, (m, url) => { if (!sources.includes(url)) sources.push(url); return ""; });
-    let html = "", list = false;
-    for (const raw of esc(text.trim()).split("\n")) {
-      const line = raw.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-      const item = line.match(/^\s*[*\-•]\s+(.*)/);
-      if (item) { if (!list) { html += "<ul>"; list = true; } html += `<li>${linkify(item[1])}</li>`; continue; }
-      if (list) { html += "</ul>"; list = false; }
-      if (line.trim()) html += `<p>${linkify(line)}</p>`;
-    }
-    const src = sources.map((u) => `<a class="cad-src" href="https://${u.replace(/^https?:\/\//, "").replace(/[.\/]+$/, "")}" target="_blank" rel="noopener">${esc(sourceLabel(u))} ↗</a>`).join("");
-    return `<div class="cad-msg">${list ? html + "</ul>" : html}${src ? `<div class="cad-srcs">${src}</div>` : ""}</div>`;
-  }
+  const { esc, render } = window.CadenceRender;  // safe rendering lives in /render.js (unit-tested)
 
   // ---- Handoff card (same fields as cadre.ai/contact; demo: sends and stores nothing) ----
   function formHtml() {
@@ -302,14 +265,17 @@
         failed = true; received = FALLBACK; shown = 0; reveal();
       }
       await done;
-      // Final full render, awaited, so the last characters are never dropped on close (09-23 bug:
-      // an answer ended at "hello@gocadre.a")
-      if (received && mySession === session) await signals.onResponse({ html: render(received), overwrite: true });
-      if (mySession === session) {
-        if (!failed) history.push({ role: "assistant", content: received.trim() });
-        if (meta) showStatus(null, meta);
+      try {
+        // Final full render, awaited, so the last characters are never dropped on close (09-23 bug:
+        // an answer ended at "hello@gocadre.a")
+        if (received && mySession === session) await signals.onResponse({ html: render(received), overwrite: true });
+        if (mySession === session) {
+          if (!failed) history.push({ role: "assistant", content: received.trim() });
+          if (meta) showStatus(null, meta);
+        }
+      } finally {
+        signals.onClose();  // always release the input, even if rendering throws (audit 09-24: chat froze)
       }
-      signals.onClose();
       if (mySession === session && meta && meta.handoff) {
         // They asked for a person → show the form now. Otherwise (e.g. pricing) → offer it.
         const explicit = routeData.asks_for_human || routeData.topic === "booking";

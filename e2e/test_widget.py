@@ -136,8 +136,7 @@ def test_iphone_keyboard_never_covers_the_form_and_nothing_auto_focuses(iphone: 
     iphone.get_by_role("button", name="Ask Cadre's AI").tap()
     expect(iphone.locator(INPUT)).to_be_visible()
     assert iphone.evaluate("document.activeElement.tagName") == "BODY", "opening must not pop the keyboard"
-    iphone.get_by_role("button", name="More options").tap()
-    iphone.get_by_role("menuitem", name="Talk to a strategist").tap()
+    iphone.get_by_role("button", name="Talk to a strategist").tap()
     name = iphone.locator("deep-chat .cad-form input[name=name]").last
     expect(name).to_be_visible()
     assert iphone.evaluate("!document.getElementById('chat').shadowRoot.activeElement"), "form must not grab focus"

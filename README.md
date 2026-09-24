@@ -24,8 +24,9 @@ Forward Deployed AI Engineer role.
 Browser widget (public/index.html)
    │  POST /api/chat → streamed answer (Server-Sent Events)
    ▼
-FastAPI on Vercel (app/main.py)
-   ├─ guards.py       per-visitor rate limit; length and turn caps
+FastAPI on Vercel (app/main.py: routes only)
+   ├─ guards.py       per-visitor rate limit; length caps
+   ├─ chat.py         one turn: route → answer → handoff decision → save; deadlines per stage
    ├─ router.py       Jev picks the topic and "asks for a person?" → handoff rules
    │                  (Jev unsure or rate-limited → one retry → chat model routes instead)
    ├─ answer.py       system prompt + sourced knowledge → gemini-2.5-flash via OpenRouter
@@ -45,7 +46,7 @@ Details: `docs/jev-routing.md` (routing), `db/schema.sql` (data), `plan.md` (dec
 
 ## Run it locally
 ```bash
-python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml
+python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright
 cp .env.example .env            # add your OPENROUTER_API_KEY
 vercel link && vercel env pull  # optional: Jev auth via a Vercel OIDC token in .env.local
 .venv/bin/uvicorn app.main:app --reload    # http://localhost:8000
@@ -55,8 +56,8 @@ Without a Jev credential, routing falls back to the chat model automatically.
 ## Test it
 | Command | What it checks | Cost |
 |---|---|---|
-| `.venv/bin/python -m pytest -q` | 50 unit tests, network faked | $0 |
-| `.venv/bin/python -m pytest e2e -q` | 6 browser tests in Chromium (keyboard, phone, form) | ~$0.01 |
+| `.venv/bin/python -m pytest -q` | 58 unit tests (Python + the widget's JS rendering), network faked | $0 |
+| `.venv/bin/python -m pytest e2e -q` | 9 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
 | `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site | ~$0.03 |
 | `.venv/bin/python tools/verify_knowledge.py` | Every knowledge quote still matches cadre.ai | $0 |
 | `.venv/bin/python -m evals.run --repeat 3` | 26 real questions, code-scored | ~$0.05 |

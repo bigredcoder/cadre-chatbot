@@ -29,12 +29,16 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash")
 ANSWER_MAX_TOKENS = 500      # hard cap per reply: keeps answers short and spend bounded
 ANSWER_TEMPERATURE = 0.2     # low: we want consistent, grounded answers, not creativity
-ANSWER_TIMEOUT_S = 30
+ANSWER_TIMEOUT_S = 15         # longest wait for the next piece of the answer
+ANSWER_DEADLINE_S = 25        # whole answer; past this the visitor gets the fallback
+# Deadlines per turn stage (audit 09-24: without them a hung provider meant 80s+ of waiting).
+# Worst case now: route 10 + answer 25 + answer check 4 = 39s, then the fallback message.
+ROUTE_DEADLINE_S = 10
+ANSWER_CHECK_DEADLINE_S = 4
 
 # --- Conversation limits (research findings #17) ---
 MAX_MESSAGE_CHARS = 1000     # a single visitor message
 MAX_HISTORY_MESSAGES = 8     # only the recent turns are sent to the model
-MAX_TURNS_PER_SESSION = 30   # beyond this, point them to a person
 # Per visitor IP. ESTIMATE: well above human typing speed. Evals raise these (one "visitor").
 RATE_LIMIT_PER_MINUTE = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "12"))
 RATE_LIMIT_PER_DAY = int(os.environ.get("RATE_LIMIT_PER_DAY", "200"))
