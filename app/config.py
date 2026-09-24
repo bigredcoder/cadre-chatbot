@@ -49,6 +49,7 @@ JEV_RETRY_DELAY_S = 0.3   # one retry on 429/503 (measured 09-23: Jev rate-limit
 # confidence against labeled outcomes before trusting it as a threshold).
 ROUTE_MIN_CONFIDENCE = 0.6
 HUMAN_REQUEST_THRESHOLD = 0.7    # Jev's "explicitly asking for a person?" probability
+ANSWERED_THRESHOLD = 0.7         # Jev's "did the reply fully answer it?" (ESTIMATE; evals tune)
 OFF_TOPIC_CANNED_CONFIDENCE = 0.9  # this sure it's off-topic → canned reply, no model call
 
 TOPICS = {  # key: description Jev uses to decide

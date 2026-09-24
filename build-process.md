@@ -626,9 +626,28 @@ and never judged it as a visitor would.
 
 **Say in the review:** "Real-device testing found what emulation didn't: auto-focus pops the iOS keyboard over the form. I fixed it and added a test that simulates the keyboard, so it can't come back."
 
-**09-24 · Privacy link removed from the menu (Brian's call)** · commit pending
+**09-24 · Privacy link removed from the menu (Brian's call)** · commit `88313fb`
 - The "How chat data is used" menu item is gone; `/privacy.html` still exists and stays
   accurate. The trade-off against the research's privacy-note guidance is logged in `plan.md` §6b.
 - **"Start a new chat" is now a visible "+ New chat" button** in the header (Brian: "should be
   a button, not a dropdown"). The ••• menu keeps Talk to a strategist and Behind the scenes.
   Header checked at iPhone and desktop widths, no overflow; browser tests 9/9.
+
+**09-24 · Needless strategist offers and source formatting (Brian's feedback)** · commit _pending_
+- **Found:** 8 of 26 eval answers ended with "Would you like to talk to an AI strategist?"
+  after fully answering. Cause: the prompt's "one next step" rule plus an example that ended
+  that way. Separately, the model's own handoff tag sometimes fired after a complete answer
+  (portal question → an unwanted offer card).
+- **Fix 1 (prompt, Brian's file):** offer a strategist only for buying, pricing, booking, or
+  something the bot can't answer; the example no longer ends with an offer.
+- **Fix 2 (code):** when the model asks for an offer the rules didn't, Jev gets a second
+  question: "did the reply fully answer it?" Answered → no card. Jev down → card stays
+  (better to offer help than hide it). Shown in Behind the scenes as `handoff_check`.
+- **Fix 3 (UI):** "More: cadre.ai/strategy." endings now render as a labeled source link
+  under the answer ("AI Strategy ↗"). Mid-stream a half-typed link is hidden, not flickered.
+- **Checked:** evals before → after: text offers on complete answers 8 → 0; handoff accuracy
+  95% → 100%; 25/26 pass (the miss is a topic label, answer correct). Jev's answered check
+  on 7 real replies: 6/7 right; it scored "Which AI models do you use?" 0.44 (Cadre doesn't
+  name models, so arguably right). Unit 53/53 (3 new), browser 9/9 incl. a new source-link check.
+
+**Say in the review:** "I used Jev twice: once to route the question, once as a judge on the model's own reply before interrupting the visitor with a sales offer. It fails open: if the judge is down, the offer stays."

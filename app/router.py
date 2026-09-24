@@ -63,7 +63,12 @@ def _state(history: list[dict]) -> str:
 
 
 async def _ask_jev(history: list[dict], token: str) -> tuple[dict, float]:
-    body = {"model": config.JEV_MODEL, "state": _state(history), "questions": _questions()}
+    return await _evaluate(_state(history), _questions(), token)
+
+
+async def _evaluate(state: str, questions: dict, token: str) -> tuple[dict, float]:
+    """One Jev call through Vercel AI Gateway: typed answers plus what the call cost."""
+    body = {"model": config.JEV_MODEL, "state": state, "questions": questions}
     async with httpx.AsyncClient(timeout=config.JEV_TIMEOUT_S) as client:
         for attempt in range(2):  # one quick retry: Jev rate-limits (HTTP 429) under load
             resp = await client.post(
@@ -145,3 +150,33 @@ async def _route(history: list[dict], request_token: str | None) -> Route:
     except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError) as err:
         return _decide("services", None, "default", False,
                        f"{note}; fallback failed ({type(err).__name__})")
+
+
+ANSWERED_QUESTION = {"answered": {
+    "type": "boolean",
+    "instructions": "Did the assistant's reply fully answer the visitor's question?",
+    "criteria": {
+        "true": "the reply gives the specific information that was asked for, even if it "
+                "then offers to connect the visitor with a strategist",
+        "false": "the reply says the information isn't available, is unknown, or that "
+                 "someone else must answer (for example pricing, certifications, account help)",
+    },
+}}
+
+
+async def answered_fully(question: str, reply: str, request_token: str | None = None) -> bool | None:
+    """Second opinion before offering a strategist the visitor didn't ask for.
+
+    The answer model sometimes adds [HANDOFF] after it has fully answered (09-23 evals and
+    live use). Jev, an evaluation model, checks whether the reply actually answered the
+    question. True = answered, so skip the offer. None = Jev unavailable: keep the offer (it's
+    better to offer help than to hide it).
+    """
+    token = config.gateway_token(request_token)
+    if not token or config.ROUTER_MODE == "model_only":
+        return None
+    try:
+        answers, _ = await _evaluate(f"Visitor: {question}\nAssistant: {reply}", ANSWERED_QUESTION, token)
+        return answers["answered"]["probability"] >= config.ANSWERED_THRESHOLD
+    except (httpx.HTTPError, KeyError, TypeError, ValueError):
+        return None

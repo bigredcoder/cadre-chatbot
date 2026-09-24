@@ -162,3 +162,39 @@ def test_lead_whitespace_name_does_not_crash():
     body = client.post("/api/leads", json={**LEAD, "name": "   ",
                                            "idempotency_key": "key-00000009"}).json()
     assert body["ok"] and body["message"].startswith("Thanks, there.")
+
+
+def _model_tags_handoff(monkeypatch):
+    async def fake(history, topic):
+        yield {"type": "token", "text": "The portal is at portal.gocadre.ai."}
+        yield {"type": "done", "handoff": True, "model": "m"}   # model added [HANDOFF]
+    monkeypatch.setattr(main, "stream_answer", fake)
+
+
+def test_unrequested_offer_skipped_when_jev_says_answered(monkeypatch):
+    _model_tags_handoff(monkeypatch)
+
+    async def yes(q, reply, token=None):
+        return True
+    monkeypatch.setattr(main, "answered_fully", yes)
+    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
+    assert '"handoff": false' in body and "offer skipped" in body
+
+
+def test_unrequested_offer_kept_when_not_answered(monkeypatch):
+    _model_tags_handoff(monkeypatch)
+
+    async def no(q, reply, token=None):
+        return False
+    monkeypatch.setattr(main, "answered_fully", no)
+    assert '"handoff": true' in _post([{"role": "user", "content": "SOC 2?"}]).text
+
+
+def test_offer_kept_when_check_unavailable(monkeypatch):
+    _model_tags_handoff(monkeypatch)
+
+    async def down(q, reply, token=None):
+        return None
+    monkeypatch.setattr(main, "answered_fully", down)
+    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
+    assert '"handoff": true' in body and "check unavailable" in body

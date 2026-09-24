@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app import config, guards
 from app.answer import AnswerError, stream_answer
-from app.router import route
+from app.router import answered_fully, route
 from app.transcripts import save_turn
 
 app = FastAPI(title="Cadence", docs_url=None, redoc_url=None)
@@ -102,7 +102,15 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
                     reply += item["text"]
                 if kind == "done":
                     item["model_handoff"] = item["handoff"]
-                    item["handoff"] = decision.handoff or item["handoff"]
+                    offer = item["handoff"]
+                    if offer and not decision.handoff:
+                        # The model added a handoff the rules didn't ask for: second opinion
+                        answered = await answered_fully(latest["content"], reply, oidc)
+                        item["handoff_check"] = {True: "answered: offer skipped",
+                                                 False: "not answered: offer kept",
+                                                 None: "check unavailable: offer kept"}[answered]
+                        offer = answered is not True
+                    item["handoff"] = decision.handoff or offer
                     done = item
                 yield sse(kind, item)
         except Exception as err:  # AnswerError or anything unexpected

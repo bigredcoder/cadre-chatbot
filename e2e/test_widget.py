@@ -52,6 +52,8 @@ def test_starter_streams_a_complete_grounded_answer(page: Page):
     expect(page.locator(LAST_ANSWER)).to_contain_text("pillar", timeout=ANSWER)
     expect(page.locator("deep-chat .cad-starters.cad-gone")).to_have_count(1)   # starters tucked away
     expect(page.locator("deep-chat")).not_to_contain_text("[HANDOFF")
+    expect(page.locator(LAST_ANSWER)).not_to_contain_text("More:")          # source shown as a link chip
+    expect(page.locator("deep-chat .cad-src").last).to_have_attribute("href", re.compile(r"^https://(portal\.go)?cadre\.ai"))
     page.get_by_role("button", name="More options").click()
     page.get_by_role("menuitem", name="Show behind the scenes").click()
     expect(page.locator("#status")).to_contain_text("maturity_index", timeout=ANSWER)

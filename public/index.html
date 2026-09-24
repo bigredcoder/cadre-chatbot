@@ -153,7 +153,24 @@
       return ALLOWED.includes(url.hostname) ? `<a href="${url.href}" target="_blank" rel="noopener">${esc(m)}</a>` : m;
     });
   }
-  function render(text) {
+  // "More: cadre.ai/strategy." endings become a labeled source link under the answer
+  // (research findings: show sources; 09-24 polish). Labels come from the page path.
+  const SOURCE_LABELS = { "": "cadre.ai", "strategy": "AI Strategy", "leadership-facilitation": "AI Leadership & Facilitation",
+    "ai-engineering": "AI Engineering", "agents": "AI Agents", "about": "About Cadre", "contact": "Contact Cadre",
+    "case-studies": "Case studies", "industries": "Industries", "ai-maturity-index": "AI Maturity Index",
+    "retail-e-commerce": "Retail & E-commerce", "manufacturing-logistics": "Manufacturing & Logistics" };
+  const MORE = /\s*(?:More|Learn more|Source):\s*((?:https?:\/\/)?(?:www\.)?(?:cadre\.ai|portal\.gocadre\.ai)(?:\/[\w\-\/]*)?)\.?/gi;
+  function sourceLabel(url) {
+    const path = url.replace(/^https?:\/\//, "").replace(/^[^/]+\/?/, "").replace(/\/+$/, "");
+    const last = path.split("/").pop();
+    if (url.includes("portal.gocadre.ai") && !path) return "Cadre client portal";
+    return SOURCE_LABELS[last] ?? last.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+  }
+  function render(text, final = true) {
+    const sources = [];
+    // Mid-stream, hide a half-typed "More: cadre.ai/str" line; the link appears when the answer is done
+    if (!final) text = text.replace(/\s*(?:More|Learn more|Source):[^\n]*$/i, "");
+    text = text.replace(MORE, (m, url) => { if (!sources.includes(url)) sources.push(url); return ""; });
     let html = "", list = false;
     for (const raw of esc(text.trim()).split("\n")) {
       const line = raw.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
@@ -162,7 +179,8 @@
       if (list) { html += "</ul>"; list = false; }
       if (line.trim()) html += `<p>${linkify(line)}</p>`;
     }
-    return `<div class="cad-msg">${list ? html + "</ul>" : html}</div>`;
+    const src = sources.map((u) => `<a class="cad-src" href="https://${u.replace(/^https?:\/\//, "").replace(/[.\/]+$/, "")}" target="_blank" rel="noopener">${esc(sourceLabel(u))} ↗</a>`).join("");
+    return `<div class="cad-msg">${list ? html + "</ul>" : html}${src ? `<div class="cad-srcs">${src}</div>` : ""}</div>`;
   }
 
   // ---- Handoff card (same fields as cadre.ai/contact; demo: sends and stores nothing) ----
@@ -250,7 +268,7 @@
         if (received.length > shown) {
           shown = REDUCED ? received.length : shown + Math.max(2, Math.ceil((received.length - shown) / 14));
           if (!opened) { signals.onOpen(); opened = true; }
-          signals.onResponse({ html: render(received.slice(0, shown)), overwrite: true });
+          signals.onResponse({ html: render(received.slice(0, shown), false), overwrite: true });
         }
         if (shown < received.length) frame = requestAnimationFrame(tick);
         else if (meta || failed) finish();
@@ -341,6 +359,10 @@
     .cad-msg p { margin: 0 0 8px; } .cad-msg p:last-child { margin-bottom: 0; }
     .cad-msg ul { margin: 4px 0 8px; padding-left: 20px; } .cad-msg li { margin: 3px 0; }
     .cad-msg a, .cad-form a { color: #B83232; }
+    .cad-srcs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .cad-src { font-size: 13px; color: #2b2b2b !important; text-decoration: none; background: #fff; border: 1px solid #e5e2da;
+               border-radius: 36px; padding: 4px 10px; }
+    .cad-src:hover { border-color: #DB4545; }
     .cad-greet { display: inline-block; background: #FAF9F6; border-radius: 16px; padding: 10px 14px; max-width: 88%; }
     .cad-starters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-top: 14px; }
     .cad-starters.cad-gone { display: none; }
