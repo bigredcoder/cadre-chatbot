@@ -43,7 +43,6 @@ def ask(page: Page, text: str) -> None:
 def test_opens_with_ai_disclosure_and_starters(page: Page):
     open_chat(page)
     expect(page.locator(".ph small")).to_contain_text("Cadre's AI assistant")
-    expect(page.locator("#notice")).to_contain_text("saved for 30 days")
     expect(page.locator("deep-chat .cad-chip", has_text="What does Cadre do?")).to_be_visible()
 
 
@@ -98,8 +97,9 @@ def test_start_over_clears_the_conversation(page: Page):
 
 def test_privacy_page_matches_storage(page: Page):
     open_chat(page)
+    page.get_by_role("button", name="More options").click()
     with page.expect_popup() as popup:
-        page.locator("#notice").get_by_role("link", name="Details").click()
+        page.get_by_role("menuitem", name="How chat data is used").click()
     expect(popup.value.locator("body")).to_contain_text("redacted, for 30 days")
 
 
@@ -125,6 +125,29 @@ def test_iphone_nothing_wider_than_the_screen_through_a_full_conversation(iphone
     iphone.locator("deep-chat .cad-chip", has_text="How do I book a call?").tap()
     expect(iphone.locator("deep-chat .cad-form")).to_have_count(1, timeout=ANSWER)  # asked for a call → form now
     check("answer + form")
+
+
+def test_iphone_keyboard_never_covers_the_form_and_nothing_auto_focuses(iphone: Page):
+    # Simulate the iOS keyboard: visualViewport reports a shorter visible area, like Safari does
+    iphone.add_init_script("""(() => { const vv = window.visualViewport; let kb = 0;
+      Object.defineProperty(vv, 'height', { get: () => window.innerHeight - kb });
+      Object.defineProperty(vv, 'offsetTop', { get: () => 0 });
+      window.__keyboard = (h) => { kb = h; vv.dispatchEvent(new Event('resize')); }; })();""")
+    iphone.goto(BASE)
+    iphone.get_by_role("button", name="Ask Cadre's AI").tap()
+    expect(iphone.locator(INPUT)).to_be_visible()
+    assert iphone.evaluate("document.activeElement.tagName") == "BODY", "opening must not pop the keyboard"
+    iphone.get_by_role("button", name="More options").tap()
+    iphone.get_by_role("menuitem", name="Talk to a strategist").tap()
+    name = iphone.locator("deep-chat .cad-form input[name=name]").last
+    expect(name).to_be_visible()
+    assert iphone.evaluate("!document.getElementById('chat').shadowRoot.activeElement"), "form must not grab focus"
+    name.tap()
+    iphone.evaluate("window.__keyboard(336)")                    # iPhone 14 keyboard height
+    iphone.wait_for_timeout(900)
+    visible = iphone.evaluate("innerHeight") - 336
+    box = name.bounding_box()
+    assert box["y"] >= 0 and box["y"] + box["height"] <= visible, f"field hidden by keyboard: {box}, visible={visible}"
 
 
 def test_iphone_inputs_are_16px_so_safari_does_not_zoom(iphone: Page):

@@ -559,7 +559,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Chat window rebuilt on Deep Chat (after Brian's iPhone review) · commit pending
+## 2026-09-23 · Chat window rebuilt on Deep Chat (after Brian's iPhone review) · commit `0b61759`
 **What Brian found on his iPhone:** the chat jumped, content ran off the right edge, the
 page slid side to side, and it felt "like a first coding project." He was right.
 
@@ -610,3 +610,18 @@ and never judged it as a visitor would.
 - Browser tests updated for the menu; 8/8, twice.
 
 **Say in the review:** "For the UI, I benchmarked against a production widget, Chatbase, instead of designing from scratch, and kept every rule of my own: grounded answers, the handoff, and the privacy notice."
+
+**Brian's iPhone round 2 (09-23): three fixes**
+- **The keyboard covered the form.** The form (and the chat on open) moved focus into a field
+  by itself, which pops the iOS keyboard, and Safari doesn't shrink the page for the keyboard.
+  → On touch devices nothing auto-focuses; the phone panel is sized to `visualViewport`
+  (the area above the keyboard); a tapped field is scrolled into view. New WebKit test
+  simulates a 336px keyboard and fails if the field is hidden or anything auto-focuses.
+- **The privacy banner was removed** (Brian's call). "How chat data is used" stays in the
+  ••• menu.
+- **Send/stop icons were off-center.** The built-in paper plane sat low-left in its circle.
+  → Our own up-arrow and stop-square icons in a symmetric box; measured icon center =
+  circle center, and circle center = input center, in the empty, ready, and answering states.
+- Browser suite: 9/9 (3 iPhone tests).
+
+**Say in the review:** "Real-device testing found what emulation didn't: auto-focus pops the iOS keyboard over the form. I fixed it and added a test that simulates the keyboard, so it can't come back."

@@ -63,11 +63,6 @@
   .menu button, .menu a { text-align:left; background:none; border:none; border-radius:8px; padding:10px 12px; font:14px Inter,Arial,sans-serif;
           color:var(--txt); text-decoration:none; cursor:pointer; }
   .menu button:hover, .menu a:hover { background:var(--warm); }
-  .notice { flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px 8px 16px; font-size:12px; color:var(--sub);
-            background:var(--warm); border-bottom:1px solid #eee; }
-  .notice a { color:var(--red-ink); }
-  .notice button { margin-left:auto; flex:none; border:none; background:none; color:var(--sub); cursor:pointer; font-size:13px; padding:4px; }
-  .notice[hidden] { display:none; }
   #status { flex:none; font:11.5px ui-monospace,Menlo,monospace; color:var(--sub); background:var(--warm); border-bottom:1px solid #eee;
             padding:6px 16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #status[hidden] { display:none; }
@@ -81,7 +76,7 @@
     main { margin:36px auto; padding:0 16px; }
     #launcher { right:16px; }
     #launcher.is-open { display:none; }
-    #panel { inset:0; width:100%; height:100dvh; border:none; border-radius:0; transform:translateY(32px); }
+    #panel { top:0; left:0; right:0; bottom:auto; width:100%; height:100dvh; border:none; border-radius:0; transform:translateY(32px); }
     #panel.open { transform:none; }
     .ph { padding-top:calc(10px + env(safe-area-inset-top)); }
   }
@@ -122,8 +117,6 @@
     <button class="hbtn" id="close" type="button" aria-label="Close the assistant">✕</button>
   </div>
   <div id="status" hidden aria-live="off"></div>
-  <div class="notice" id="notice">Chats are saved for 30 days with emails and phone numbers removed. <a href="/privacy.html" target="_blank" rel="noopener">Details</a>
-    <button type="button" id="notice-x" aria-label="Dismiss">✕</button></div>
   <deep-chat id="chat"></deep-chat>
 </section>
 
@@ -132,6 +125,10 @@
   const $ = (id) => document.getElementById(id);
   const panel = $("panel"), launcher = $("launcher"), chat = $("chat"), status = $("status");
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Touch phones: never move focus into a field by ourselves. That pops the on-screen keyboard
+  // over the chat before the visitor taps anything (Brian's iPhone, 09-23).
+  const TOUCH = window.matchMedia("(pointer: coarse)").matches;
+  const focusChat = () => { if (!TOUCH && chat.focusInput) chat.focusInput(); };
   const ALLOWED = ["cadre.ai", "www.cadre.ai", "portal.gocadre.ai"];  // research findings #7
   const STARTERS = ["What does Cadre do?", "Do you work with my industry?", "What is the AI Maturity Index?",
                     "How do I book a call?", "How do you handle data security?"];
@@ -186,7 +183,7 @@
     // The component wires classes only when a message first renders; wire this one ourselves
     form.querySelector(".cad-form-send").addEventListener("click", submitForm);
     card.replaceWith(form);
-    form.querySelector("input[name=name]").focus({ preventScroll: true });
+    if (!TOUCH) form.querySelector("input[name=name]").focus({ preventScroll: true });
   }
   async function submitForm(event) {
     const card = event.target.closest(".cad-form"), btn = card.querySelector(".cad-form-send"), err = card.querySelector(".cad-form-err");
@@ -323,13 +320,18 @@
     },
   };
   chat.inputAreaStyle = { padding: "10px 16px 8px", backgroundColor: "#fff", boxSizing: "border-box", width: "100%" };
+  // Our own icons, drawn centered in a symmetric 24x24 box (the built-in paper plane sat
+  // low-left inside the circle on iPhone, 09-23). Send = up arrow; stop = rounded square.
+  const ARROW = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const STOP = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="10" height="10" rx="2" fill="#fff"/></svg>';
+  const circle = (opacity) => ({ backgroundColor: "#0C0407", opacity, borderRadius: "50%", width: "32px", height: "32px",
+                                 padding: "0", margin: "0", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" });
+  const icon = { default: { width: "18px", height: "18px", margin: "0", padding: "0", display: "block", filter: "none" } };
   chat.submitButtonStyles = { position: "inside-end",
-    submit: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" }, hover: { backgroundColor: "#2a2023" } },
-              svg: { styles: { default: { filter: "brightness(0) invert(1)", width: "16px", height: "16px" } } } },
-    disabled: { container: { default: { backgroundColor: "#0C0407", opacity: "0.25", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } },
-                svg: { styles: { default: { filter: "brightness(0) invert(1)", width: "16px", height: "16px" } } } },
-    loading: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } } },
-    stop: { container: { default: { backgroundColor: "#0C0407", opacity: "1", borderRadius: "50%", width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center" } }, svg: { styles: { default: { filter: "brightness(0) invert(1)" } } } } };
+    submit: { container: { default: circle("1"), hover: { backgroundColor: "#2a2023" } }, svg: { content: ARROW, styles: icon } },
+    disabled: { container: { default: circle("0.25") }, svg: { content: ARROW, styles: icon } },
+    loading: { container: { default: circle("1") }, svg: { content: STOP, styles: icon } },
+    stop: { container: { default: circle("1") }, svg: { content: STOP, styles: icon } } };
   chat.auxiliaryStyle = `
     .cad-msg p { margin: 0 0 8px; } .cad-msg p:last-child { margin-bottom: 0; }
     .cad-msg ul { margin: 4px 0 8px; padding-left: 20px; } .cad-msg li { margin: 3px 0; }
@@ -369,12 +371,30 @@
 
   });
 
+  // ---- iPhone keyboard: Safari doesn't shrink the page when the keyboard opens, so the chat
+  // would sit under it. Size the phone panel to the visible area (visualViewport) and keep the
+  // field being typed in on screen. ----
+  const vv = window.visualViewport;
+  function fitToKeyboard() {
+    if (!vv || !window.matchMedia("(max-width: 520px)").matches) { panel.style.height = ""; panel.style.top = ""; return; }
+    panel.style.height = vv.height + "px";
+    panel.style.top = vv.offsetTop + "px";
+  }
+  if (vv) { vv.addEventListener("resize", fitToKeyboard); vv.addEventListener("scroll", fitToKeyboard); }
+  chat.addEventListener("focusin", (e) => {
+    const field = e.composedPath()[0];
+    if (TOUCH && field && field.matches && field.matches("input, textarea")) {
+      setTimeout(() => field.scrollIntoView({ block: "center", behavior: REDUCED ? "auto" : "smooth" }), 300);
+    }
+  });
+
   // ---- Open / close / menu / notice ----
   function open() {
     panel.hidden = false;
+    fitToKeyboard();
     requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
     launcher.classList.add("is-open"); launcher.setAttribute("aria-expanded", "true"); launcher.setAttribute("aria-label", "Close the assistant");
-    setTimeout(() => chat.focusInput && chat.focusInput(), REDUCED ? 0 : 260);
+    setTimeout(focusChat, REDUCED ? 0 : 260);
   }
   function close() {
     closeMenu();
@@ -390,12 +410,11 @@
   launcher.onclick = () => (panel.classList.contains("open") ? close() : open());
   $("close").onclick = close;
   panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!menu.hidden) { closeMenu(); menuBtn.focus(); } else close(); } });
-  $("notice-x").onclick = () => { $("notice").hidden = true; };
   $("restart").onclick = async () => {
     closeMenu();
     session = crypto.randomUUID(); history = []; lastTopic = ""; lastQuestion = ""; status.textContent = "";
     if (inflight) { abortCtl && abortCtl.abort(); await inflight.catch(() => {}); }  // let the old answer wind down first
-    chat.clearMessages(true); chat.focusInput && chat.focusInput();
+    chat.clearMessages(true); focusChat();
   };
   $("human").onclick = () => { closeMenu(); lastTopic = lastTopic || "booking"; chat.addMessage({ role: "ai", html: formHtml() }); };
 })();
