@@ -691,7 +691,7 @@ and never judged it as a visitor would.
   flag. Answers are 2–4 sentences by design, and no eval case comes close.
 - **Checked:** ruff, mypy, 72 unit tests, evals 26/26 (topic and handoff 100%).
 
-**09-25 · File-by-file audit: `app/transcripts.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/transcripts.py`** · commit `ce62c24`
 - **Found:** `save_turn` promised "never raises" but caught only network errors. Any other
   failure escaped after the answer was already sent, and the widget could then show the error
   text instead of the answer. **Fixed:** every failure is logged and swallowed. Test added.
