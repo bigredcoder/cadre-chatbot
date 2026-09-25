@@ -308,3 +308,26 @@ def test_a_stalled_answer_is_cut_off_at_the_deadline(monkeypatch):
     body = _post([{"role": "user", "content": "What does Cadre do?"}]).text
     assert "event: error" in body and "hello@gocadre.ai" in body
     assert SAVED[-1]["outcome"] == "error"
+
+
+def test_a_broken_answer_check_never_replaces_a_finished_answer(monkeypatch):
+    # Audit 09-25: an unexpected error in the optional Jev check reached the outer handler,
+    # so a complete answer was replaced by "Sorry, I couldn't answer that".
+    _model_tags_handoff(monkeypatch)
+
+    async def broken(q, reply, token=None):
+        raise RuntimeError("unexpected")
+    monkeypatch.setattr(chat, "answered_fully", broken)
+    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
+    assert "event: error" not in body and "portal.gocadre.ai" in body
+    assert '"handoff": true' in body and "check unavailable" in body
+
+
+def test_offer_shows_when_the_reply_promises_a_person_even_without_the_tag(monkeypatch):
+    # Audit 09-25: the promise rule only ran when the model also added its handoff tag
+    async def fake(history, topic, screen=""):
+        yield {"type": "token", "text": "For login help, I can connect you with a strategist."}
+        yield {"type": "done", "handoff": False, "model": "m"}   # no [HANDOFF] tag
+    monkeypatch.setattr(chat, "stream_answer", fake)
+    body = _post([{"role": "user", "content": "I can't log in"}]).text
+    assert '"handoff": true' in body and "reply offers a person" in body

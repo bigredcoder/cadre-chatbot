@@ -58,14 +58,15 @@ async def _offer_after_answer(decision: Route, model_handoff: bool, question: st
     """Show the strategist offer? Rules first; a model-only offer gets a second opinion."""
     if decision.handoff:
         return True, None
+    if OFFERS_A_PERSON.search(reply):   # checked first: the words and the screen must agree
+        return True, "reply offers a person: offer kept"
     if not model_handoff:
         return False, None
-    if OFFERS_A_PERSON.search(reply):
-        return True, "reply offers a person: offer kept"
     try:
         answered = await asyncio.wait_for(answered_fully(question, reply, oidc),
                                           config.ANSWER_CHECK_DEADLINE_S)
-    except TimeoutError:
+    except Exception:  # timeout or anything unexpected: an optional check never breaks an answer
+        log.warning("answer check failed", exc_info=True)
         answered = None
     note = {True: "answered: offer skipped", False: "not answered: offer kept",
             None: "check unavailable: offer kept"}[answered]

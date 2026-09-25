@@ -658,3 +658,13 @@ and never judged it as a visitor would.
 - **Also seen:** a first eval run scored 23/26 because the local Jev token had expired (HTTP
   401). Every message fell back to the chat model and was still answered safely.
 - **Checked:** ruff, mypy, 63 unit, 10 browser (local), evals 26/26, topic and handoff 100%.
+
+**09-25 · File-by-file audit: `app/chat.py`** · commit _pending_
+- **Found:** an unexpected error in the optional Jev "did it answer?" check reached the outer
+  error handler, so a finished answer could be replaced by "Sorry, I couldn't answer that".
+  **Fixed:** any failure there counts as "check unavailable" and keeps the offer; test added.
+- **Found:** the "reply promises a person, so show the button" rule only ran when the model
+  also added its handoff tag. **Fixed:** the wording is checked first; test added.
+- **Noted, not changed:** if routing itself crashed, that turn wouldn't be saved. `route()` is
+  built never to raise (every failure falls back), so this is practically unreachable.
+- **Checked:** ruff, mypy, 65 unit tests, evals 26/26 (topic and handoff 100%).
