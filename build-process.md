@@ -717,3 +717,15 @@ and never judged it as a visitor would.
   threshold was checked on 7 real replies and the 26 evals; a slow save can hold the input up
   to 3 s.
 - **Checked:** ruff, mypy, 73 unit tests.
+
+**09-25 · File-by-file audit: `public/` (chat window)** · commit _pending_
+- **Found:** a connection hiccup *after* the answer finished (`done` received) replaced the
+  finished answer with "Sorry, I couldn't answer that just now." **Fixed:** once `done`
+  arrives, later stream errors are ignored.
+- **Found:** a stream that ended mid-answer showed the half answer with no hint. **Fixed:** what
+  arrived stays, with the fallback line and Cadre's contact under it.
+- Two browser tests fake each broken stream; both fail on the old code and pass on the new.
+- **Checked:** all rendered text escaped (`render.js`, 7 JS tests); the form can't be sent
+  twice; New chat cancels an answer in progress; the rate-limit message; `privacy.html` matches
+  what's stored.
+- **Checked:** 12 browser tests (local), 73 unit tests.

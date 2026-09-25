@@ -268,9 +268,12 @@
             else if (ev === "error") { failed = true; received = data.message || FALLBACK; shown = 0; reveal(); }
           }
         }
-        if (!meta && !failed) { failed = true; if (!received) received = FALLBACK; reveal(); }
+        // Stream ended without "done": keep what arrived and say it's incomplete (audit 09-25)
+        if (!meta && !failed) { failed = true; received = received ? received + "\n\n" + FALLBACK : FALLBACK; reveal(); }
       } catch (e) {
-        failed = true; received = e.message === "slow" ? SLOW_DOWN : FALLBACK; shown = 0; reveal();
+        // A hiccup after the answer finished ("done" arrived) must not replace it (audit 09-25)
+        if (!meta) { failed = true; received = e.message === "slow" ? SLOW_DOWN : FALLBACK; shown = 0; }
+        reveal();
       }
       await done;
       try {

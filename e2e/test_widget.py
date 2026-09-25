@@ -108,6 +108,33 @@ def test_firewall_rate_limit_says_slow_down_not_sorry(page: Page):
     expect(page.locator(INPUT)).to_be_editable()                              # input released
 
 
+def _fake_stream(page: Page, body: str) -> None:
+    page.route("**/api/chat", lambda r: r.fulfill(status=200, body=body,
+                                                  headers={"Content-Type": "text/event-stream"}))
+
+
+def test_a_hiccup_after_the_answer_never_replaces_it(page: Page):
+    # Audit 09-25: an error after "done" (here, a garbled trailing event) replaced a finished
+    # answer with "Sorry, I couldn't answer that just now."
+    _fake_stream(page, 'event: token\ndata: {"text": "Cadre works in construction."}\n\n'
+                       'event: done\ndata: {"handoff": false, "model": "m"}\n\n'
+                       'event: token\ndata: {garbled\n\n')
+    open_chat(page)
+    ask(page, "Do you work with construction companies?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("Cadre works in construction.")
+    expect(page.locator(LAST_ANSWER)).not_to_contain_text("couldn't answer")
+    expect(page.locator(INPUT)).to_be_editable()
+
+
+def test_a_cut_off_answer_keeps_what_arrived_and_says_so(page: Page):
+    # Audit 09-25: a stream that ended mid-answer showed the half answer with no hint
+    _fake_stream(page, 'event: token\ndata: {"text": "Cadre has four services:"}\n\n')
+    open_chat(page)
+    ask(page, "What does Cadre do?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("Cadre has four services:")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("couldn't answer that just now")
+
+
 def test_privacy_page_matches_storage(page: Page):
     # No longer linked from the widget (Brian, 09-24); the page stays accurate at /privacy.html
     page.goto(BASE + "/privacy.html")
