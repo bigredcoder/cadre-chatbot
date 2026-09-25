@@ -718,7 +718,7 @@ and never judged it as a visitor would.
   to 3 s.
 - **Checked:** ruff, mypy, 73 unit tests.
 
-**09-25 · File-by-file audit: `public/` (chat window)** · commit _pending_
+**09-25 · File-by-file audit: `public/` (chat window)** · commit `78fc549`
 - **Found:** a connection hiccup *after* the answer finished (`done` received) replaced the
   finished answer with "Sorry, I couldn't answer that just now." **Fixed:** once `done`
   arrives, later stream errors are ignored.
