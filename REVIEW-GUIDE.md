@@ -23,7 +23,8 @@
 **System design**
 - Request flow: `public/index.html` → `app/main.py` (routes only) → `app/chat.py` (one turn:
   redact → route → answer → handoff decision → save) → `router.py` / `answer.py` / `transcripts.py`.
-- Grounding: `knowledge/cadre.md`, 77 facts, each with an exact quote and a cadre.ai URL,
+- Grounding: `knowledge/cadre.md`, 77 facts, each with an exact quote and a cadre.ai URL
+  (plus the partner list from the brief, labeled as such),
   re-checked against the live site by `tools/verify_knowledge.py`. No retrieval: it fits in
   the prompt (trade-off in plan.md §2).
 - Routing: Jev picks the topic and "asks for a person?", and **rules** decide the handoff
@@ -39,12 +40,12 @@
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 63 unit tests (Python plus the widget's JS rendering), 10 browser tests (desktop plus iPhone
-  WebKit), and 26 answer-quality evals scored by code.
+- 73 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
+  WebKit), and 28 answer-quality evals scored by code.
 - Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
 
 ## Evidence in numbers
-- Evals: **26/26**, topic and handoff accuracy 100% (latest run: `evals/results/deadline-fix.json`).
+- Evals: **28/28**, topic and handoff accuracy 100% (latest run: `evals/results/content-audit.json`).
 - Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): 51 vs. 44 of 52 correct, routing
   0.38s vs. 0.66s.
 - Cost: about $0.001 per answer; about $10/month fixed (plan.md §5a).

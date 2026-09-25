@@ -1,7 +1,9 @@
 # Cadre AI: knowledge for Cadence
 
 The ONLY facts Cadence may state about Cadre. Every line: fact — "exact quote" — source URL.
-Checked against the live site by `tools/verify_knowledge.py`. Read from cadre.ai on 2026-09-23.
+Checked against the live site by `tools/verify_knowledge.py`. Read from cadre.ai on 2026-09-23;
+re-checked 2026-09-25 (77/77). One line comes from Cadre's take-home brief instead of the site;
+it says so, and the script skips it because there's no page to check.
 If it isn't here, Cadence doesn't know it and offers a strategist.
 
 ## Company
@@ -15,6 +17,7 @@ If it isn't here, Cadence doesn't know it and offers a strategist.
 - Track record. — "high-ROI use cases delivered across 50+ companies" — https://cadre.ai/about
 - Partner status shown on the homepage. — "Anthropic & OpenAI Partner" — https://cadre.ai/
 - OpenAI service partner. — "Official OpenAI Service Partner" — https://cadre.ai/strategy
+- Key partners (from Cadre's take-home brief, "About Cadre AI"; not on a single site page). — "OpenAI, Anthropic (Claude), Google, Microsoft, AWS, Salesforce, Snowflake — plus OpenRouter for model access" — Cadre take-home brief v1.1
 - Office location. — "3580 Carmel Mountain Rd, #150" — https://cadre.ai/contact
 - City and state. — "San Diego" — https://cadre.ai/contact
 - Founder and CEO. — "Grayson Lafrenz" — https://cadre.ai/about

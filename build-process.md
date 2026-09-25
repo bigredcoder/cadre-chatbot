@@ -729,3 +729,16 @@ and never judged it as a visitor would.
   twice; New chat cancels an answer in progress; the rate-limit message; `privacy.html` matches
   what's stored.
 - **Checked:** 12 browser tests (local), 73 unit tests.
+
+**09-25 · Content audit: `knowledge/` and `prompts/`** · commit _pending_
+- **Facts re-checked:** `tools/verify_knowledge.py` → 77/77 quotes still match cadre.ai today.
+- **Gap found:** the brief lists Cadre's key partners (OpenAI, Anthropic, Google, Microsoft,
+  AWS, Salesforce, Snowflake, OpenRouter); the fact file had only OpenAI and Anthropic, so "Do
+  you partner with Salesforce?" got "I don't know." **Added** one line sourced from the brief and
+  labeled as such (the script skips it: no page to check). New eval case.
+- **Prompt v4:** the version note listed only v3 (09-23); it now records the three changes since
+  and why. Added an example for visitors who share contact details: point to the form. (The
+  earlier "I can't store your information" reply was actually true, since emails and phones are
+  removed before saving; the example improves the tone.) New eval case.
+- `evals/compare.py` no longer hard-codes "26 cases".
+- **Checked:** evals 28/28 (topic and handoff 100%), 73 unit tests; test counts refreshed.

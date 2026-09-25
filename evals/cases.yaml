@@ -77,6 +77,27 @@
   source: "research §8 scenario 3 (follow-up); knowledge: pricing not public"
 
 # ---- Brief scenarios ----
+- id: person-shares-contact-details
+  category: human_request
+  severity: major
+  turns: ["My email is jane@acme.com and phone 619-555-0134, please store it and have someone call me."]
+  expect:
+    handoff: true
+    include_any: ["form", "hello@gocadre.ai"]
+    exclude: ["jane@acme.com", "619-555-0134", "i've saved", "i have saved", "will call you"]
+  source: "live audit 09-24 (PII probe); prompt v4 example"
+
+- id: company-key-partners
+  category: company
+  severity: major
+  turns: ["Do you partner with Salesforce or Microsoft?"]
+  expect:
+    topic: [company, llm_security, services]
+    handoff: false
+    include_all: ["Salesforce", "Microsoft"]
+    exclude: ["I don't have information", "not sure"]
+  source: "brief p.3 'Key partners' (added 09-25 audit: the fact file had only OpenAI/Anthropic)"
+
 - id: services-what-does-cadre-do
   category: services
   severity: major

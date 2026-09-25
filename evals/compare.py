@@ -74,7 +74,7 @@ def main() -> None:
     mode = ("model-only routing" if args.no_jev else
             "fixed Jev routes, same for every model" if args.routes else "live Jev routing")
     lines = [f"# Model comparison ({mode})",
-             "", f"26 cases; critical cases x{args.repeat}. Ranked: critical failures, pass rate, cost.{note}",
+             "", f"{rows[0].get('cases', '?') if rows else '?'} cases; critical cases x{args.repeat}. Ranked: critical failures, pass rate, cost.{note}",
              "Real example of every failure: see the matching *-failures.md file.", "",
              "| Model | Passed | Critical fails | Major fails | Topic acc. | Handoff acc. | Median ms | p90 ms | Route ms | $/turn |",
              "|---|---|---|---|---|---|---|---|---|---|"]

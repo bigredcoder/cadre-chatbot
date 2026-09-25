@@ -40,8 +40,8 @@ It doesn't guess.
    reply, topic, confidence, router, model, latency, tokens, cost, outcome). Emails, phone
    and card numbers are redacted before the models see them and before saving; rows are
    deleted after 30 days; described on `/privacy.html`.
-7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 62 unit tests,
-   26 eval cases, 10 browser tests)
+7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 73 unit tests,
+   28 eval cases, 12 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
 
