@@ -702,13 +702,13 @@ and never judged it as a visitor would.
   fallback if the stream errors after `done`.
 - **Checked:** ruff, mypy, 73 unit tests.
 
-**09-25 · File-by-file audit: `app/guards.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/guards.py`** · commit `7162b70`
 - **No bugs.** Checked against Vercel's docs that `x-forwarded-for` is overwritten by Vercel,
   so a visitor can't fake an IP to dodge the limit; noted it in the code. Rejected requests
   don't count against the visitor (standard). Noted that the strategist form shares the chat
   budget. Comment-only changes.
 
-**09-25 · File-by-file audit: `app/config.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/config.py`** · commit `7162b70`
 - **Found:** three settings nothing used: `HANDOFF_TAG` (superseded by the any-spelling match in
   `answer.py`), `RETENTION_DAYS` (the database enforces 30 days itself), and
   `ALLOWED_LINK_HOSTS` (the real allow-list is in `public/render.js`). **Removed**, with a
