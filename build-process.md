@@ -756,7 +756,7 @@ and never judged it as a visitor would.
   has INSERT only; one policy (insert); the nightly 30-day deletion job is scheduled (03:17);
   172 rows, with zero emails, phone numbers, or card numbers left in visitor messages.
 
-**09-25 · Invisible and control characters stripped from visitor messages** · commit _pending_
+**09-25 · Invisible and control characters stripped from visitor messages** · commit `1af30e9`
 - **Asked (Brian):** is there a check for illegal characters and injection? The existing layers
   held (prompt rules, canned off-topic, escaped rendering, link allow-list, no SQL, strict
   request format, rate limits, and a bot with no tools). **Gap:** invisible characters
