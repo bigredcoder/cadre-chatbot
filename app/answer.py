@@ -17,7 +17,8 @@ import httpx
 
 from app import config
 
-# The tag in any capitalization or spacing (audit 09-25: only exact "[HANDOFF]" was caught,
+# The model ends a reply with [HANDOFF] when a person should be offered (prompts/system.md).
+# Matched in any capitalization or spacing (audit 09-25: only exact "[HANDOFF]" was caught,
 # so "[Handoff]" would have shown on screen and lost the offer)
 TAG = re.compile(r"\[\s*handoff\s*\]", re.IGNORECASE)
 

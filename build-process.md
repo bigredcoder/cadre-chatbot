@@ -701,3 +701,19 @@ and never judged it as a visitor would.
 - **Queued for the `public/index.html` audit:** the widget replaces a finished answer with the
   fallback if the stream errors after `done`.
 - **Checked:** ruff, mypy, 73 unit tests.
+
+**09-25 · File-by-file audit: `app/guards.py`** · commit _pending_
+- **No bugs.** Checked against Vercel's docs that `x-forwarded-for` is overwritten by Vercel,
+  so a visitor can't fake an IP to dodge the limit; noted it in the code. Rejected requests
+  don't count against the visitor (standard). Noted that the strategist form shares the chat
+  budget. Comment-only changes.
+
+**09-25 · File-by-file audit: `app/config.py`** · commit _pending_
+- **Found:** three settings nothing used: `HANDOFF_TAG` (superseded by the any-spelling match in
+  `answer.py`), `RETENTION_DAYS` (the database enforces 30 days itself), and
+  `ALLOWED_LINK_HOSTS` (the real allow-list is in `public/render.js`). **Removed**, with a
+  pointer to where each really lives.
+- **Fixed comments:** the model's 52/52 is "with identical recorded routing"; the answered
+  threshold was checked on 7 real replies and the 26 evals; a slow save can hold the input up
+  to 3 s.
+- **Checked:** ruff, mypy, 73 unit tests.

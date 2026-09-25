@@ -25,7 +25,8 @@ _load_dotenv()
 # --- Answer model (OpenRouter) ---
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Chosen 2026-09-23 from an 11-model eval comparison (plan.md §5, "Why this model"):
-# 52/52 with zero critical or major failures, and the fastest of the three perfect models.
+# 52/52 with identical recorded routing, zero critical or major failures, and the fastest of
+# the three perfect models.
 ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash")
 ANSWER_MAX_TOKENS = 500      # hard cap per reply: keeps answers short and spend bounded
 ANSWER_TEMPERATURE = 0.2     # low: we want consistent, grounded answers, not creativity
@@ -54,7 +55,9 @@ JEV_RETRY_DELAY_S = 0.3   # one retry on 429/503 (measured 09-23: Jev rate-limit
 # "Why these numbers").
 ROUTE_MIN_CONFIDENCE = 0.6
 HUMAN_REQUEST_THRESHOLD = 0.7    # Jev's "explicitly asking for a person?" probability
-ANSWERED_THRESHOLD = 0.7         # Jev's "did the reply fully answer it?" (ESTIMATE; evals tune)
+# Jev's "did the reply fully answer it?". ESTIMATE, checked on 7 real replies (6 right; the
+# miss was borderline) and the 26 evals (100% handoff accuracy).
+ANSWERED_THRESHOLD = 0.7
 OFF_TOPIC_CANNED_CONFIDENCE = 0.9  # this sure it's off-topic → canned reply, no model call
 
 TOPICS = {  # key: description Jev uses to decide
@@ -76,9 +79,6 @@ ROUTER_MODE = os.environ.get("ROUTER_MODE", "jev")
 # booking's answer IS the handoff form).
 HANDOFF_TOPICS = {"pricing", "booking"}
 
-# --- Handoff ---
-HANDOFF_TAG = "[HANDOFF]"    # the model ends a reply with this (answer.py also accepts any case/spacing)
-
 # --- Conversation storage (Supabase project "cadre-chatbot") ---
 # The publishable key is public by design (like any website's analytics key). The table's
 # row-level security lets it INSERT only: it can't read, change, or delete anything.
@@ -88,11 +88,10 @@ SUPABASE_PUBLISHABLE_KEY = os.environ.get(
     "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_ZvU8JpnOjhQqb6IlLiGlZw_6KF0nQvs"
 )
 SAVE_TURNS = os.environ.get("SAVE_TURNS", "1") != "0"   # evals set 0: tests aren't visitors
-SAVE_TIMEOUT_S = 3            # saving must never slow the visitor down
-RETENTION_DAYS = 30           # enforced by a nightly pg_cron job in the database
+SAVE_TIMEOUT_S = 3            # a slow save can hold the input at most this long (usually < 1 s)
+# Retention (30 days) is enforced by a nightly job in the database itself: db/schema.sql.
 
-# --- Links the UI may render (research findings #7) ---
-ALLOWED_LINK_HOSTS = ("cadre.ai", "www.cadre.ai", "portal.gocadre.ai")
+# --- Contact (the allow-list of links the widget may render lives in public/render.js) ---
 CONTACT_EMAIL = "hello@gocadre.ai"
 
 # --- Files ---
