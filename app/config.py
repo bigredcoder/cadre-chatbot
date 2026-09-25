@@ -77,7 +77,7 @@ ROUTER_MODE = os.environ.get("ROUTER_MODE", "jev")
 HANDOFF_TOPICS = {"pricing", "booking"}
 
 # --- Handoff ---
-HANDOFF_TAG = "[HANDOFF]"    # the model ends a reply with this; the code shows the form
+HANDOFF_TAG = "[HANDOFF]"    # the model ends a reply with this (answer.py also accepts any case/spacing)
 
 # --- Conversation storage (Supabase project "cadre-chatbot") ---
 # The publishable key is public by design (like any website's analytics key). The table's

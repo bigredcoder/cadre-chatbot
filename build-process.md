@@ -679,3 +679,14 @@ and never judged it as a visitor would.
   in `chat.py` fires first, so the neutral default is used instead of the fallback classifier.
   The visitor still gets an answer.
 - **Checked:** ruff, mypy, 66 unit tests.
+
+**09-25 · File-by-file audit: `app/answer.py`** · commit _pending_
+- **Found:** only the exact `[HANDOFF]` tag was recognized. `[Handoff]` or `[ HANDOFF ]` would
+  have shown on screen and lost the offer. **Fixed:** any capitalization and spacing, including
+  while it streams in; ordinary brackets still show. Tests added.
+- **Found:** a garbled line from the provider, or an error in an unexpected shape, was logged as
+  a crash (the visitor still got the friendly message). **Fixed:** both are a normal "couldn't
+  answer" error. Test added.
+- **Noted, not changed:** an answer that hits the 500-token cap would stop mid-sentence with no
+  flag. Answers are 2–4 sentences by design, and no eval case comes close.
+- **Checked:** ruff, mypy, 72 unit tests, evals 26/26 (topic and handoff 100%).

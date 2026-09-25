@@ -17,6 +17,10 @@ import httpx
 
 from app import config
 
+# The tag in any capitalization or spacing (audit 09-25: only exact "[HANDOFF]" was caught,
+# so "[Handoff]" would have shown on screen and lost the offer)
+TAG = re.compile(r"\[\s*handoff\s*\]", re.IGNORECASE)
+
 
 class AnswerError(Exception):
     """The model couldn't produce a usable answer. The caller shows a friendly fallback."""
@@ -38,10 +42,12 @@ def build_messages(history: list[dict], topic: str, screen: str = "") -> list[di
 
 def _visible(text: str) -> str:
     """Text safe to show so far: tag removed, and any half-arrived tag held back."""
-    clean = text.replace(config.HANDOFF_TAG, "")
-    for n in range(len(config.HANDOFF_TAG) - 1, 0, -1):
-        if clean.endswith(config.HANDOFF_TAG[:n]):
-            return clean[:-n]
+    clean = TAG.sub("", text)
+    start = clean.rfind("[")
+    if start != -1:
+        tail = clean[start:].replace(" ", "").lower()
+        if "[handoff]".startswith(tail):   # "[", "[Hand", "[ handof": may still become the tag
+            return clean[:start]
     return clean
 
 
@@ -74,9 +80,14 @@ async def stream_answer(history: list[dict], topic: str, screen: str = "") -> As
             async for line in resp.aiter_lines():
                 if not line.startswith("data: ") or line == "data: [DONE]":
                     continue  # skips keep-alive comments and the end marker
-                chunk = json.loads(line[6:])
+                try:
+                    chunk = json.loads(line[6:])
+                except ValueError as err:   # garbled line: a normal "couldn't answer", not a crash
+                    raise AnswerError("malformed stream from the provider") from err
                 if "error" in chunk:
-                    raise AnswerError(str(chunk["error"].get("message", "model error")))
+                    err_info = chunk["error"]
+                    message = err_info.get("message") if isinstance(err_info, dict) else err_info
+                    raise AnswerError(str(message or "model error"))
                 usage = chunk.get("usage") or usage
                 for choice in chunk.get("choices", []):
                     full += (choice.get("delta") or {}).get("content") or ""
@@ -87,7 +98,7 @@ async def stream_answer(history: list[dict], topic: str, screen: str = "") -> As
     except httpx.HTTPError as err:
         raise AnswerError(f"network error: {type(err).__name__}") from err
 
-    final = full.replace(config.HANDOFF_TAG, "").rstrip()
+    final = TAG.sub("", full).rstrip()
     if not final.strip():
         raise AnswerError("empty reply from model")
     if len(final) > sent:
@@ -95,7 +106,7 @@ async def stream_answer(history: list[dict], topic: str, screen: str = "") -> As
 
     yield {
         "type": "done",
-        "handoff": config.HANDOFF_TAG in full,
+        "handoff": bool(TAG.search(full)),
         "model": config.ANSWER_MODEL,
         "latency_ms": int((time.monotonic() - started) * 1000),
         "input_tokens": usage.get("prompt_tokens"),

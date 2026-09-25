@@ -29,6 +29,10 @@ def test_history_is_trimmed_to_recent_turns():
     ("Hello [HAND", "Hello "),            # half-arrived tag is held back
     ("Hello [HANDOFF]", "Hello "),        # full tag removed
     ("Price [", "Price "),
+    ("Hello [Handoff]", "Hello "),        # any capitalization (audit 09-25)
+    ("Hello [ handoff ]", "Hello "),      # and spacing
+    ("Hello [Ha", "Hello "),
+    ("See [the page] here", "See [the page] here"),   # ordinary brackets are shown
 ])
 def test_visible_never_shows_the_handoff_tag(text, shown):
     assert answer._visible(text) == shown
@@ -77,6 +81,24 @@ def test_http_error_becomes_answer_error(monkeypatch):
 
 def test_missing_key_is_an_answer_error(monkeypatch):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    async def go():
+        return [e async for e in answer.stream_answer([{"role": "user", "content": "hi"}], "x")]
+    with pytest.raises(answer.AnswerError):
+        asyncio.run(go())
+
+
+def test_tag_in_other_capitalization_still_flags_handoff(monkeypatch):
+    events = _run(monkeypatch, ["I don't have that. ", "[Handoff]"])
+    text = "".join(e["text"] for e in events if e["type"] == "token")
+    assert "andoff" not in text and events[-1]["handoff"] is True
+
+
+def test_garbled_stream_is_an_answer_error_not_a_crash(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    transport = httpx.MockTransport(lambda r: httpx.Response(200, text="data: {not json\n"))
+    real = httpx.AsyncClient
+    monkeypatch.setattr(answer.httpx, "AsyncClient", lambda **kw: real(transport=transport, **kw))
+
     async def go():
         return [e async for e in answer.stream_answer([{"role": "user", "content": "hi"}], "x")]
     with pytest.raises(answer.AnswerError):
