@@ -6,6 +6,9 @@ Runs against the LIVE site by default (real Jev, real model: a few cents per run
 Against local:  BASE_URL=http://localhost:8000 .venv/bin/python -m pytest e2e -q
   (start the local server with RATE_LIMIT_PER_MINUTE=1000: repeated runs from one machine
    otherwise hit the per-visitor limit, 12 messages/minute, and answers time out)
+Against the live site, leave a minute between full runs: the suite sends ~8 chat messages,
+and the app allows 12 a minute per visitor, so back-to-back runs get "You're sending messages
+quickly" and the answer tests time out (seen 09-25; the rate limit working as designed).
 Not part of the default `pytest` run (unit tests live in tests/).
 The chat window is Deep Chat (a web component); Playwright's CSS locators see inside it.
 """
