@@ -659,7 +659,7 @@ and never judged it as a visitor would.
   401). Every message fell back to the chat model and was still answered safely.
 - **Checked:** ruff, mypy, 63 unit, 10 browser (local), evals 26/26, topic and handoff 100%.
 
-**09-25 · File-by-file audit: `app/chat.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/chat.py`** · commit `c95ae95`
 - **Found:** an unexpected error in the optional Jev "did it answer?" check reached the outer
   error handler, so a finished answer could be replaced by "Sorry, I couldn't answer that".
   **Fixed:** any failure there counts as "check unavailable" and keeps the offer; test added.
