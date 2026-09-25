@@ -123,7 +123,6 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
   real security statements, plus support email, phone, and office address (/contact).
 
 ## 5. Model comparison
-*(filled in during Phase 6: see the task under Phase 6)*
 
 **Why this model: `google/gemini-2.5-flash` (Brian's decision, 09-23)**
 - **Accuracy first:** 52/52 with no critical or major failures, one of only three perfect
@@ -179,32 +178,6 @@ they were correct ("Cadre doesn't publish its security certifications publicly")
 was too strict: exact wording, curly apostrophes, non-breaking hyphens, markdown bold. Fixed
 the checker, scored failures by *what* failed (see evals/README.md), and rescored the saved
 replies with no new calls.
-
-**Why this model:** *(recommendation: gemini-2.5-flash; pending Brian's decision)*
-
-Fair comparison, 2026-09-23: 26 cases, critical cases ×3 (52 runs per model), **identical
-Jev routing for every model** (`evals/results/routes-jev.json`), code-only scoring.
-Full table: `evals/results/compare-fixed.md`. Latency excludes routing (+~0.4 s live).
-
-| Model | Passed | Critical fails | Median | $/turn |
-|---|---|---|---|---|
-| **google/gemini-2.5-flash** | **52/52** | **0** | 0.95 s | 0.00091 |
-| google/gemini-2.5-flash-lite | 51/52 | 0 | 0.81 s | 0.00020 |
-| qwen/qwen3-235b-a22b-2507 | 46/52 | 0 | 2.1 s | 0.00019 |
-| deepseek/deepseek-chat-v3.1 | 50/52 | 1 | 3.9 s | 0.00062 |
-| openai/gpt-4.1-mini | 50/52 | 2 | 1.3 s | 0.00055 |
-| anthropic/claude-haiku-4.5 | 49/52 | 2 | 2.0 s | 0.00437 |
-| openai/gpt-4o-mini | 47/52 | 2 | 1.5 s | 0.00038 |
-| mistralai/mistral-small-3.2-24b-instruct | 47/52 | 4 | 2.3 s | 0.00035 |
-| openai/gpt-4.1-nano | 43/52 | 5 | 1.1 s | 0.00017 |
-| meta-llama/llama-4-maverick | 45/52 | 6 | 1.1 s | 0.00077 |
-| openai/gpt-oss-120b | 38/52 | 11 | 5.0 s | 0.00024 |
-| openai/gpt-5-nano, gpt-5-mini | excluded | | | |
-
-(GPT-5 nano/mini: blank replies on 48–49 of 52 runs; reasoning consumed the 500-token budget.)
-
-Most common critical failure across models: **implying a SOC 2 certification** Cadre never
-published (7 of 11 models, at least once). llama-4-maverick leaked prompt text 3/3.
 
 ## 6. AI-bug log
 Where AI output was wrong or weak, how it was caught, and what changed.
