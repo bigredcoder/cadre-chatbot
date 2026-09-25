@@ -10,6 +10,6 @@ Get the current changes ready to commit. Stop at the first failure and report it
 4. Ask the `code-reviewer` subagent to review the diff (`git diff --cached` or `git diff`).
    Fix critical/major findings, or explain why a finding is wrong.
 5. Scan the diff for secrets (`sk-or-v1-`, JWTs). Never commit `.env*`.
-6. Update `build-process.md` (did / found / decided / checked + "Say in the review").
+6. Update `build-process.md` (did / found / decided / checked).
 7. Show Brian a plain-English summary and the proposed commit message. **Commit only after
    he approves.**

@@ -70,9 +70,8 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
   the check caught). Read failing replies before claiming a model failed: checks can be wrong.
   `python -m evals.report <label>` writes them.
 - **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
-  append or update an entry: did / found / decided / checked / commit hash, plus a
-  one-line **"Say in the review"** talking point. Facts only, no marketing. Brian uses this
-  file to prepare the walkthrough, so never let it fall behind.
+  append or update an entry: did / found / decided / checked / commit hash. Facts only,
+  no marketing. It's the record of how the app was built, so never let it fall behind.
 
 ## Commands (always use the project venv: `.venv/bin/...`)
 - First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright mypy && .venv/bin/playwright install chromium webkit`
