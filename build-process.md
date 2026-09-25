@@ -730,7 +730,7 @@ and never judged it as a visitor would.
   what's stored.
 - **Checked:** 12 browser tests (local), 73 unit tests.
 
-**09-25 · Content audit: `knowledge/` and `prompts/`** · commit _pending_
+**09-25 · Content audit: `knowledge/` and `prompts/`** · commit `e95b80b`
 - **Facts re-checked:** `tools/verify_knowledge.py` → 77/77 quotes still match cadre.ai today.
 - **Gap found:** the brief lists Cadre's key partners (OpenAI, Anthropic, Google, Microsoft,
   AWS, Salesforce, Snowflake, OpenRouter); the fact file had only OpenAI and Anthropic, so "Do
