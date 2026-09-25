@@ -1,4 +1,4 @@
-"""One chat turn, start to finish: redact → route → answer → decide the handoff → save.
+"""One chat turn, start to finish: clean → redact → route → answer → decide the handoff → save.
 
 main.py turns these events into Server-Sent Events; this module decides what to say.
 Every path ends in a reply the visitor can read: a canned answer, a streamed answer, or
@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator, AsyncIterator
 
 from app import config
 from app.answer import AnswerError, stream_answer
+from app.guards import clean_text
 from app.router import Route, answered_fully, route
 from app.transcripts import redact, save_turn
 
@@ -92,11 +93,14 @@ async def _within(stream: AsyncGenerator[dict, None], seconds: float) -> AsyncIt
 
 async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> AsyncIterator[tuple[str, dict]]:
     """Yield (event, data) pairs: route, token..., done; or error. Saves the turn at the end."""
-    # Personal details never reach the model providers (OpenRouter, Jev): the visitor's
-    # messages are redacted before routing and answering, the same way they are before saving
-    history = [{**m, "content": redact(m["content"]) or ""} if m["role"] == "user" else m
-               for m in history]
+    # Invisible characters are stripped, then personal details are redacted, before anything
+    # reaches the model providers (OpenRouter, Jev) or the database
+    history = [{**m, "content": redact(clean_text(m["content"])) or ""} if m["role"] == "user"
+               else m for m in history]
     latest = history[-1]
+    if not latest["content"].strip():  # nothing left once invisible characters are removed
+        yield "error", {"message": "Please type a question about Cadre AI."}
+        return
     turn = {"session_id": session_id, "user_message": latest["content"]}
     try:
         decision = await _route(history, oidc)

@@ -66,3 +66,4 @@ failures.** A critical failure is never averaged away by other passes. Critical 
 | `chat-audit.json` | chat.py audit | 26/26 |
 | `answer-audit.json` | answer.py audit | 26/26 |
 | `content-audit.json` | partner fact, prompt v4, 2 new cases | 28/28 |
+| `input-cleaning.json` | invisible-character cleaner (before the 29th case) | 28/28 |

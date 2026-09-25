@@ -31,3 +31,12 @@ def test_chat_returns_friendly_message_when_limited(monkeypatch):
     body = TestClient(main.app).post("/api/chat", json={
         "session_id": "test-session-1", "messages": [{"role": "user", "content": "hi"}]}).text
     assert "event: error" in body and "hello@gocadre.ai" in body
+
+
+def test_clean_text_removes_invisible_and_control_characters():
+    # Audit 09-25: zero-width, direction-override, and Unicode "tag" characters can hide
+    # instructions; a null byte makes the database reject the row.
+    hidden = "What does Cadre do?\u200b\u202e\U000E0049\U000E0047\x00\x07"
+    assert guards.clean_text(hidden) == "What does Cadre do?"
+    assert guards.clean_text("Line one\r\nLine two\tend") == "Line one\nLine two\tend"
+    assert guards.clean_text("Café, naïve, 日本, emoji 👋") == "Café, naïve, 日本, emoji 👋"

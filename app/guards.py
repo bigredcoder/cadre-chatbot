@@ -17,6 +17,7 @@ caps in main.py/config.py (message length, 8 messages of history, max tokens per
 a deadline per turn). Production would move layer 2 to a shared store (plan.md, "What's next").
 """
 import time
+import unicodedata
 from collections import defaultdict, deque
 
 from app import config
@@ -48,6 +49,18 @@ def allow(ip: str, now: float | None = None) -> bool:
     _minute[ip].append(now)
     _day[ip].append(now)
     return True
+
+
+def clean_text(text: str) -> str:
+    """Remove invisible and control characters from a visitor's message (audit 09-25).
+
+    Zero-width spaces, direction overrides, and Unicode "tag" characters can hide instructions a
+    human reviewer can't see (a known prompt-injection trick), and a null byte makes the database
+    reject the row. Keeps line breaks and tabs; letters, accents, and emoji are untouched.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "".join(ch for ch in text
+                   if ch in "\n\t" or unicodedata.category(ch) not in ("Cc", "Cf"))
 
 
 def reset() -> None:

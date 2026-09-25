@@ -331,3 +331,25 @@ def test_offer_shows_when_the_reply_promises_a_person_even_without_the_tag(monke
     monkeypatch.setattr(chat, "stream_answer", fake)
     body = _post([{"role": "user", "content": "I can't log in"}]).text
     assert '"handoff": true' in body and "reply offers a person" in body
+
+
+def test_invisible_characters_never_reach_the_model(monkeypatch):
+    seen = {}
+
+    async def spy(history, topic, screen=""):
+        seen["q"] = history[-1]["content"]
+        yield {"type": "token", "text": "Cadre is an AI firm."}
+        yield {"type": "done", "handoff": False, "model": "m"}
+    monkeypatch.setattr(chat, "stream_answer", spy)
+    _post([{"role": "user", "content": "What\u200b does Cadre do?\U000E0069\x00"}])
+    assert seen["q"] == "What does Cadre do?"
+    assert SAVED[-1]["user_message"] == "What does Cadre do?"
+
+
+def test_a_message_of_only_invisible_characters_gets_a_prompt_not_a_model_call(monkeypatch):
+    async def must_not_run(history, topic, screen=""):
+        raise AssertionError("model called")
+        yield  # pragma: no cover
+    monkeypatch.setattr(chat, "stream_answer", must_not_run)
+    body = _post([{"role": "user", "content": "\u200b\u200d\u2060"}]).text
+    assert "Please type a question" in body
