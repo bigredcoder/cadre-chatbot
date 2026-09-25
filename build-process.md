@@ -680,7 +680,7 @@ and never judged it as a visitor would.
   The visitor still gets an answer.
 - **Checked:** ruff, mypy, 66 unit tests.
 
-**09-25 · File-by-file audit: `app/answer.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/answer.py`** · commit `4accbb1`
 - **Found:** only the exact `[HANDOFF]` tag was recognized. `[Handoff]` or `[ HANDOFF ]` would
   have shown on screen and lost the offer. **Fixed:** any capitalization and spacing, including
   while it streams in; ordinary brackets still show. Tests added.
