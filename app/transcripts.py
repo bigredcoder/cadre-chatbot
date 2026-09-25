@@ -1,6 +1,7 @@
 """Saves one redacted row per chat turn to Supabase, for quality review.
 
-- Emails and phone numbers are removed BEFORE anything leaves the app.
+- Emails, phone numbers and card-like numbers are removed BEFORE anything leaves the app
+  (chat.py uses the same redact() before any model call).
 - Rows are deleted after 30 days by a nightly job in the database.
 - The app's key can only insert: it can't read conversations back.
 - Saving never breaks or slows a chat: failures are logged and swallowed.

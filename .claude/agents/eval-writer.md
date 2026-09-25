@@ -20,6 +20,6 @@ Rules:
   minor (style).
 - Prefer checks a script can do (substring present/absent, topic, handoff true/false).
   Mark anything that needs human judgment with `judge: human`.
-- Don't pad. Around 20–25 cases. Mark the research scenarios you skip as N/A with a reason.
+- Don't pad. Around 25 cases. Mark the research scenarios you skip as N/A with a reason.
 
 Output: YAML only, in the schema shown in evals/README.md.

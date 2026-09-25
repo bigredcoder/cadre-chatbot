@@ -149,7 +149,7 @@
   const SLOW_DOWN = "You're sending messages quickly. Please wait a minute, or reach the team at hello@gocadre.ai.";
   const FALLBACK = "Sorry, I couldn't answer that just now. You can reach the Cadre team at hello@gocadre.ai or cadre.ai/contact.";
   let session = crypto.randomUUID(), history = [], lastTopic = "", lastQuestion = "";
-  let inflight = null, abortCtl = null;  // the answer currently streaming, so "Start over" can cancel it
+  let inflight = null, abortCtl = null;  // the answer currently streaming, so "New chat" can cancel it
 
   const { esc, render } = window.CadenceRender;  // safe rendering lives in /render.js (unit-tested)
 
@@ -234,7 +234,7 @@
       // The model sends text in lumps; reveal it a few characters per frame, faster when behind
       const tick = () => {
         frame = 0;
-        if (mySession !== session) return finish();  // "Start over" pressed: stop writing into the new chat
+        if (mySession !== session) return finish();  // "New chat" pressed: stop writing into the new chat
         if (received.length > shown) {
           shown = REDUCED ? received.length : shown + Math.max(2, Math.ceil((received.length - shown) / 14));
           if (!opened) { signals.onOpen(); opened = true; }
@@ -389,7 +389,7 @@
     }
   });
 
-  // ---- Open / close / menu / notice ----
+  // ---- Open / close / menu ----
   function open() {
     panel.hidden = false;
     fitToKeyboard();

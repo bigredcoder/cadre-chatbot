@@ -40,7 +40,9 @@ Jev ──► topic + probability, asks_for_human probability
    ├─ off_topic with ≥ 0.9? ──► canned reply, NO model call (cheap; injection never reaches the model)
    │
    ├─ handoff = topic is pricing or booking  OR  asks_for_human ≥ 0.7
-   │            (the answer model can also add a handoff when it can't answer)
+   │            (the answer model can also add a handoff when it can't answer; unless the
+   │             reply itself offers a person, a second Jev question checks whether it
+   │             actually answered, and skips the offer if so: app/chat.py)
    │
    └─ topic is passed to the answer prompt as a hint ("classified as: pricing").
       If the hint is wrong, the prompt tells the model to answer what was actually asked.
@@ -51,6 +53,7 @@ Jev ──► topic + probability, asks_for_human probability
   testing, Jev rate-limited ~20% of calls; every one was still answered normally.
 - **Timeout (6 s), network error, bad response:** the chat model routes.
 - **Both fail:** a neutral default route; the answer still runs. `route()` never raises.
+- **Routing as a whole is capped at 10 s** (`ROUTE_DEADLINE_S`); past it, a neutral default route is used.
 - "Behind the scenes" and the `chat_turns.router` column show which path ran, and why.
 
 ## Auth
@@ -72,7 +75,7 @@ Jev ──► topic + probability, asks_for_human probability
 ## Evidence (evals, same 26 cases, 52 runs)
 | | With Jev | Without Jev (chat model routes) |
 |---|---|---|
-| gemini-2.5-flash correct | 52/52 | 44/52 |
+| gemini-2.5-flash correct | 51/52 live (52/52 with replayed routes, `full-grid.md`) | 44/52 |
 | Topic labels correct | 100% | 85% |
 | Routing time (median) | 0.38 s | 0.66 s |
 | Routing cost per 1,000 messages | ~$0.02 | ~$0.07 |

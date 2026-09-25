@@ -1,7 +1,8 @@
 -- Cadence database (Supabase project "cadre-chatbot", us-west-1).
 -- Applied 2026-09-23 as two migrations: create_chat_turns, schedule_30_day_retention.
 -- One row per chat turn: the redacted exchange plus routing and cost metrics.
--- Personal emails and phone numbers are redacted in the app (app/transcripts.py) BEFORE insert.
+-- Personal emails, phone numbers and card-like numbers are redacted in the app (app/transcripts.py)
+-- BEFORE insert and before any model call.
 
 create table public.chat_turns (
   id                bigint generated always as identity primary key,
@@ -15,6 +16,7 @@ create table public.chat_turns (
   asks_for_human    boolean,
   handoff           boolean,
   model_handoff     boolean,
+  -- 'turn_limit' is no longer written (turn cap removed 09-24); kept so old rows stay valid.
   outcome           text not null check (outcome in ('answered','handoff','off_topic','error','turn_limit')),
   model             text,
   latency_ms        integer,

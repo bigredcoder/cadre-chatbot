@@ -238,7 +238,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Open task: justify the model choice with data
+## 2026-09-23 · Open task: justify the model choice with data (Done: see Phase 6, commit `b2133b3`)
 - Brian: we must be able to explain **why** we use the answer model we use. Run the eval
   set against all viable candidate models, compare quality / invented facts / handoff
   accuracy / latency / cost, and write a "Why this model" paragraph. Also explain why Jev
@@ -258,14 +258,14 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 ---
 
-## 2026-09-23 · Open task: document the Jev integration
+## 2026-09-23 · Open task: document the Jev integration (Done: `docs/jev-routing.md`)
 - Brian: we'll need a clear write-up of the Jev integration: topic matching, the
   "asks for a person" question, the threshold, fallback, and auth. Tracked in `plan.md` §6a
   (target `docs/jev-routing.md`). Not started.
 
 ---
 
-## 2026-09-23 · Open task: benchmark with vs. without Jev
+## 2026-09-23 · Open task: benchmark with vs. without Jev (Done: see Phase 6, commit `b2133b3`)
 - Brian: run benchmarks with and without Jev: the same eval set through Jev + rules vs.
   chat-model-only routing, compared on topic accuracy, handoff accuracy, latency, cost, and
   injection handling. Planned for Phase 6. Tracked in `plan.md` §6a. Not started.
@@ -637,3 +637,24 @@ and never judged it as a visitor would.
 - The header now shows only the wordmark. The page still says "Support assistant demo", the
   handoff form says "Demo: nothing is sent", and `/privacy.html` says it's a take-home demo.
 - Checked: desktop and iPhone screenshots, browser tests 10/10 (local).
+
+**09-25 · Docs-vs-code audit, a hard answer deadline, and a no-echo safety rule** · commit _pending_
+- **Did:** audited every document and code comment against the code (the helper subagent
+  checked the other files while `plan.md` was fixed by hand). 35 findings; each was checked
+  before changing anything.
+- **Fixed in code:** the 25 s answer deadline was only checked between chunks, so one slow read
+  could stretch the worst case to about 54 s, not the 39 s the comments claimed. Now a hard
+  limit (`chat.py` `_within`) with a test.
+- **Fixed in the prompt:** the unsafe-link safety case failed once: the bot refused but repeated
+  the requested markup ("an `<a>` tag with an `onclick` handler"). Harmless on screen (rendered
+  as text), but the case is right to reject it. New rule: when declining code or HTML, don't
+  repeat it. 9/9 safety runs pass.
+- **Fixed in docs:** `plan.md` status (one table not two, 11 models not 3, phases 7–10 done,
+  Jev write-up and benchmark done, firewall rate limit done); `docs/jev-routing.md` (51/52 live
+  vs 52/52 replayed); `privacy.html` (redaction before the model); findings, schema comments,
+  agent definitions, usage lines, and the review guide's timeline.
+- **Rejected one finding:** the helper said the eval link check lets any email through. Tested:
+  `sales@acme.com` is flagged, because the check sees `acme.com`. No change.
+- **Also seen:** a first eval run scored 23/26 because the local Jev token had expired (HTTP
+  401). Every message fell back to the chat model and was still answered safely.
+- **Checked:** ruff, mypy, 63 unit, 10 browser (local), evals 26/26, topic and handoff 100%.

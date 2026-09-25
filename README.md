@@ -27,10 +27,11 @@ Browser widget (public/index.html)
    │  POST /api/chat → streamed answer (Server-Sent Events)
    ▼
 FastAPI on Vercel (app/main.py: routes only)
-   ├─ guards.py       per-visitor rate limit; length caps
-   ├─ chat.py         one turn: route → answer → handoff decision → save; deadlines per stage
+   ├─ guards.py       per-visitor rate limit (length and history caps: main.py)
+   ├─ chat.py         one turn: redact → route → answer → handoff decision → save; deadlines
    ├─ router.py       Jev picks the topic and "asks for a person?" → handoff rules
-   │                  (Jev unsure or rate-limited → one retry → chat model routes instead)
+   │                  (rate-limited → one retry; unsure, down, or still limited → the chat
+   │                  model routes instead; routing capped at 10 s)
    ├─ answer.py       system prompt + sourced knowledge → gemini-2.5-flash via OpenRouter
    └─ transcripts.py  redact → save one row per turn to Supabase (insert-only)
 ```
@@ -66,7 +67,7 @@ Without a Jev credential, routing falls back to the chat model automatically.
 ## Test it
 | Command | What it checks | Cost |
 |---|---|---|
-| `.venv/bin/python -m pytest -q` | 62 unit tests (Python + the widget's JS rendering), network faked | $0 |
+| `.venv/bin/python -m pytest -q` | 63 unit tests (Python + the widget's JS rendering), network faked | $0 |
 | `.venv/bin/python -m pytest e2e -q` | 10 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
 | `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site (the burst now also trips the Vercel firewall rule) | ~$0.03 |
 | `.venv/bin/python tools/verify_knowledge.py` | Every knowledge quote still matches cadre.ai | $0 |

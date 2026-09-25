@@ -3,8 +3,9 @@
 Two scenarios:
   1. Concurrency: N visitors ask at the same moment (different questions). Measures time to
      first token, total time, errors, and how often Jev fell back.
-  2. Burst from one visitor: M rapid messages from this machine. Expect the per-visitor rate
-     limit to answer the excess with a friendly message: no 500s, no model spend.
+  2. Burst from one visitor: M rapid messages from this machine. Expect the app's limit
+     (12/min per instance) to answer some of the excess with a friendly message, and Vercel's
+     firewall to return HTTP 429 from request 21 (listed under "other"): no 500s, no model spend.
 
 Usage: .venv/bin/python tools/load_test.py [--base URL] [--concurrent 10] [--burst 25]
 """

@@ -36,10 +36,12 @@ It doesn't guess.
    confirmation says so honestly.
 4. Guardrails: on-topic only, no invented facts or prices, resists prompt injection
 5. Chat bubble UI in Cadre's style, streaming answers, starter questions, "Behind the scenes" toggle
-6. Conversations saved for quality review: emails and phone numbers redacted, deleted
-   after 30 days, disclosed on /privacy. Plus one event row per turn (topic, confidence,
-   router, model, latency, tokens, cost, outcome).
-7. Unit tests + ~20-case answer-quality test set, one command each
+6. Conversations saved for quality review: one row per turn in `chat_turns` (message,
+   reply, topic, confidence, router, model, latency, tokens, cost, outcome). Emails, phone
+   and card numbers are redacted before the models see them and before saving; rows are
+   deleted after 30 days; described on `/privacy.html`.
+7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 62 unit tests,
+   26 eval cases, 10 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
 
@@ -69,7 +71,7 @@ no autonomous actions.
 | Jev for routing, chat model for answers | Jev returns typed decisions with confidence; cheap and fast | New (Sept 2026) service → built a fallback |
 | Model fallback when Jev is unsure or down | The demo can't depend on a week-old beta | Slightly more code |
 | Knowledge in the prompt, not retrieval | Small corpus; simpler and more accurate | Won't scale to hundreds of pages as-is |
-| Capture leads on handoff | The bot's job is to free up strategists | Needs a database and validation |
+| ~~Capture leads on handoff~~ → replaced 09-23 by the demo form below | The bot's job is to free up strategists | Real capture is designed (`db/schema.sql`), not built |
 | Never quote prices | Not published; wrong numbers cost trust | Some visitors want a number |
 | Named persona ("Cadence"), labeled as AI | Engagement plus honesty (AI disclosure) | No human face on the bot |
 | ~~No transcripts stored~~ → **Transcripts kept, redacted, 30-day deletion** | Changed 09-23: research recommends routine transcript sampling (findings, §9 Lean level); you can't improve what you can't review | Holds some personal data briefly; mitigated by redaction, retention, disclosure |
@@ -86,15 +88,21 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **2. Knowledge:** `knowledge/cadre.md` from cadre.ai, a source per fact, reviewed line by line
 - [x] **3. Answering:** `prompts/system.md`, `answer.py`, streaming `/api/chat`, UI wired to the API
 - [x] **4. Routing:** Jev topic + needs-human, confidence threshold, fallback, tests for each path
-- [x] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase `conversations` + `chat_events` with redaction and 30-day deletion
-- [x] **6. Measure:** ~20 eval cases, runner, 3-model comparison, pick the model
+- [x] **5. Handoff + data:** contact-style form (dummy, honest confirmation), `/api/leads` validation + idempotency, Supabase with redaction and 30-day deletion (planned as two tables, `conversations` + `chat_events`; built as one table, `chat_turns`, one row per turn: simpler, and every review query still works)
+- [x] **6. Measure:** 26 eval cases, runner, 11-model comparison (planned: 3), pick the model
   - **Task (Brian, 09-23): justify the model choice with data.** Run the same eval set
     against every candidate answer model (not just 3 if more are viable) and record
     quality, invented facts, handoff accuracy, latency, and cost per conversation in §5.
     Write a short "Why this model" paragraph: why the winner, why not the runners-up.
     Also explain why Jev for routing (Phase 1 + Phase 4 measurements) vs. using the chat
-    model for routing too. The current `google/gemini-2.5-flash-lite` is **provisional**.
-- [ ] **7. Harden + ship:** guards, reviewer pass, README, what's next, submit
+    model for routing too. **Done:** `google/gemini-2.5-flash` chosen (§5); Jev benchmark in §6a.
+- [x] **7. Harden:** rate limits, code-reviewer pass (8 fixes), README, browser and load tests
+- [x] **8. Device testing + UI rebuild (09-23/24):** chat window rebuilt on Deep Chat after
+  iPhone testing; iPhone tests in Safari's engine (§6b)
+- [x] **9. Pre-submission audit (09-24):** skeptical-reviewer audit of code, docs, and the live
+  bot; fixes for a chat freeze, card-number redaction, time limits, redaction before model
+  calls, a shared firewall rate limit, and `REVIEW-GUIDE.md`
+- [ ] **10. Submit:** swap in Cadre's key (Brian approves), zip with `.git`, upload
 
 ## 4a. Phase 1 findings (Jev spike, 2026-09-23)
 Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
@@ -107,7 +115,8 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
 
 - **Topic routing is strong.** Use Jev's `choice` for the topic.
 - **A vague "needs a human?" boolean is unreliable** (construction scored above pricing).
-  Decision: handoff = topic rule (pricing, security, portal login always offer a human) +
+  Decision: handoff = topic rule (planned: pricing, security, portal login; built: pricing and
+  booking, while security and login gaps are handed off by the model plus Jev's check) +
   a sharper Jev boolean, "is the visitor explicitly asking for a person?", with `criteria`
   defining true and false. Re-measure in Phase 6.
 - Auth works with the Vercel OIDC token locally; AI Gateway requires a card on file.
@@ -179,6 +188,21 @@ was too strict: exact wording, curly apostrophes, non-breaking hyphens, markdown
 the checker, scored failures by *what* failed (see evals/README.md), and rescored the saved
 replies with no new calls.
 
+## 5a. Running costs (Brian, 09-23)
+Actual where measured; ESTIMATE / ASSUMED where not.
+
+| Item | What it is | Cost now (demo) | At production scale |
+|---|---|---|---|
+| **Vercel hosting** | Hobby plan: the app, deploys, OIDC auth | **$0** | Hobby is for non-commercial use; a real Cadre deployment would need a paid plan (ASSUMED ~$20 per team member/month, check Vercel pricing) |
+| **Supabase database** | Project `cadre-chatbot` (conversation storage) | **$10/month** (quoted by Supabase when created; Brian deleted another project to offset it) | Same, until storage or traffic outgrows the compute size |
+| **Answer model** | gemini-2.5-flash via OpenRouter | ~**$0.91 per 1,000 answers** (measured in evals) | Scales with traffic: 10,000 answers/month ≈ $9 (ESTIMATE) |
+| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); ~$0.02 per 1,000 messages at list price (measured cost field) | ~$0.20 per 10,000 messages (ESTIMATE); a higher rate-limit tier may cost more (unknown) |
+| **Domain** | Using the free `cadre-chatbot-xi.vercel.app` | $0 | ~$10–20/year for a custom domain (ESTIMATE) |
+| **Build and testing spend** | Dev OpenRouter key: evals, 11-model comparisons, benchmarks | **$2.46 so far** (actual, 09-23) | Each full eval run of one model ≈ $0.02–0.25 depending on model |
+
+**Demo total:** about **$10/month** fixed (Supabase), plus under $1 in model usage for the
+review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
+
 ## 6. AI-bug log
 Where AI output was wrong or weak, how it was caught, and what changed.
 
@@ -201,21 +225,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 | 09-24 | Source-link rendering, the redaction rule, and the answer check (Claude, 09-23/24) | The label code threw on a path like `cadre.ai/foo-` and froze the input; 16-digit card numbers passed the phone rule unredacted; the answer check could hide the button while the reply promised a strategist; main.py had grown logic that CLAUDE.md said it doesn't hold | A skeptical pre-submission audit (Claude reviewing its own work, with the live bot and the code) | All fixed with regression tests: 7 JS render tests, card redaction test, offer and timeout tests; logic moved to `app/chat.py` |
 | 09-24 | Redaction moved before the model call (Claude) | The phone rule judged digit count, so "budget 25000-50000" reached the model as "[phone removed]", breaking pricing questions; 26/26 evals passed because no case had numbers | The `/ship` command's code-reviewer subagent, in a headless Claude Code run (`docs/claude-code-runs/`) | Phone *shape* rule plus a regression test for budgets, revenue, and team sizes |
-
-## 5a. Running costs (Brian, 09-23)
-Actual where measured; ESTIMATE / ASSUMED where not.
-
-| Item | What it is | Cost now (demo) | At production scale |
-|---|---|---|---|
-| **Vercel hosting** | Hobby plan: the app, deploys, OIDC auth | **$0** | Hobby is for non-commercial use; a real Cadre deployment would need a paid plan (ASSUMED ~$20 per team member/month, check Vercel pricing) |
-| **Supabase database** | Project `cadre-chatbot` (conversation storage) | **$10/month** (quoted by Supabase when created; Brian deleted another project to offset it) | Same, until storage or traffic outgrows the compute size |
-| **Answer model** | gemini-2.5-flash via OpenRouter | ~**$0.91 per 1,000 answers** (measured in evals) | Scales with traffic: 10,000 answers/month ≈ $9 (ESTIMATE) |
-| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); ~$0.02 per 1,000 messages at list price (measured cost field) | ~$0.20 per 10,000 messages (ESTIMATE); a higher rate-limit tier may cost more (unknown) |
-| **Domain** | Using the free `cadre-chatbot-xi.vercel.app` | $0 | ~$10–20/year for a custom domain (ESTIMATE) |
-| **Build and testing spend** | Dev OpenRouter key: evals, 11-model comparisons, benchmarks | **$2.46 so far** (actual, 09-23) | Each full eval run of one model ≈ $0.02–0.25 depending on model |
-
-**Demo total:** about **$10/month** fixed (Supabase), plus under $1 in model usage for the
-review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
+| 09-25 | Docs and comments written across the build (Claude) | 35 claims had drifted from the code, including a 39 s worst case that was really ~54 s; and the helper's own audit wrongly said the eval link check let any email through | A docs-vs-code audit by the helper subagent, each finding re-checked by hand before changing anything | Hard answer deadline with a test; docs corrected; the wrong finding rejected after testing it |
 
 ## 6a. Documentation tasks (for the review)
 - **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the
@@ -223,7 +233,7 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   question and its true/false criteria, the confidence threshold and why it's 0.6, the
   model fallback path, how the topic feeds the answer prompt, the off-topic short-circuit,
   auth via Vercel OIDC, and the Phase 1 / Phase 4 measurements. Target:
-  `docs/jev-routing.md` plus a diagram. Not started.
+  `docs/jev-routing.md` plus a diagram. **Done:** `docs/jev-routing.md`.
 
 - **DONE 09-23 (corrected). Benchmark with vs. without Jev.** Same model (gemini-2.5-flash),
   26 cases × critical ×3: **with Jev 51/52, topic labels 100%, handoff 97%, routing 0.38 s,
@@ -238,7 +248,7 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   and compare topic accuracy, handoff accuracy, latency (median and slow tail), cost per
   conversation, and off-topic/injection handling. It answers "was Jev worth adding?" with
   data. Easy to run: `route()` already has both paths; add a flag to force the fallback.
-  Do it in Phase 6 alongside the model comparison. Not started.
+  Do it in Phase 6 alongside the model comparison. **Done** (see the entry above).
 
 ## 6b. Changed by Brian after device testing (09-24)
 - The privacy banner (09-23) and the "How chat data is used" menu link (09-24) were removed at
@@ -255,9 +265,13 @@ review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
   alert when the fallback rate passes a threshold (the `router` column in `chat_turns`
   already records it).
 - Reasoning models (GPT-5 family): test with reasoning effort set to minimal and a larger token budget.
-- **Rate limiting that holds across instances:** move `guards.py` counters to a shared store
-  (or Vercel firewall rules). **Proven necessary 09-23:** a 25-message burst from one visitor
-  spread across instances and none was limited (`evals/results/load-test.log`).
+- **Rate limiting that holds across instances:** **Proven necessary 09-23:** a 25-message
+  burst from one visitor spread across instances and none was limited. **Done 09-24:** a
+  Vercel firewall rule (20 POSTs a minute per IP on `/api/`, all instances). Remaining: move
+  the app's own friendlier counter (`guards.py`) to a shared store.
+- **Server-side conversation history:** today the browser sends the last 8 messages, so a
+  script could forge an earlier assistant turn (tested live: the bot refused). Store history
+  per session on the server.
 - **Real lead capture:** replace the demo form with a `leads` table (insert-only) plus a CRM
   sync (schema sketched in `db/schema.sql`); measure qualified meetings, not form fills.
 - **One-line embed for cadre.ai:** a `<script>` tag that loads the widget on any page.

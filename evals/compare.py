@@ -3,6 +3,7 @@
 Usage:
   .venv/bin/python -m evals.compare                 # all CANDIDATES, Jev routing
   .venv/bin/python -m evals.compare --no-jev        # same, model-only routing (benchmark)
+  .venv/bin/python -m evals.compare --routes evals/results/routes-jev.json   # same recorded routes for every model
 Writes evals/results/<label>-<model>.json and evals/results/<label>.md.
 """
 import argparse

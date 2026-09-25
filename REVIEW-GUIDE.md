@@ -26,23 +26,25 @@
 - Grounding: `knowledge/cadre.md`, 77 facts, each with an exact quote and a cadre.ai URL,
   re-checked against the live site by `tools/verify_knowledge.py`. No retrieval: it fits in
   the prompt (trade-off in plan.md §2).
-- Routing: Jev picks the topic and "asks for a person?", and **rules** decide the handoff.
+- Routing: Jev picks the topic and "asks for a person?", and **rules** decide the handoff
+  (the answer model can add an offer, double-checked by Jev).
   Details and failure modes: `docs/jev-routing.md`.
 - Data: one table (`db/schema.sql`), insert-only key, redacted, deleted after 30 days.
 
 **Speed and scope**
-- The working bot was live about 3.5 hours after the first commit (git log, 09-23 12:06 → 15:34).
+- The first streaming answers worked 36 minutes after the first commit (git log, 09-23
+  12:06 → 12:42), and the eval-tested, hardened version was done by 15:23.
   Later time went to real-iPhone testing, a UI rebuild on a proven component, and a
   pre-submission audit.
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 62 unit tests (Python plus the widget's JS rendering), 10 browser tests (desktop plus iPhone
+- 63 unit tests (Python plus the widget's JS rendering), 10 browser tests (desktop plus iPhone
   WebKit), and 26 answer-quality evals scored by code.
 - Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
 
 ## Evidence in numbers
-- Evals: **26/26**, topic and handoff accuracy 100% (latest run: `evals/results/screen-hint.json`).
+- Evals: **26/26**, topic and handoff accuracy 100% (latest run: `evals/results/deadline-fix.json`).
 - Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): 51 vs. 44 of 52 correct, routing
   0.38s vs. 0.66s.
 - Cost: about $0.001 per answer; about $10/month fixed (plan.md §5a).

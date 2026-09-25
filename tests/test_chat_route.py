@@ -293,3 +293,18 @@ def test_model_is_told_what_the_visitor_will_see(monkeypatch):
         monkeypatch.setattr(chat, "route", fixed)
         _post([{"role": "user", "content": "hi"}])
         assert seen["screen"] == expected, decision.topic
+
+
+def test_a_stalled_answer_is_cut_off_at_the_deadline(monkeypatch):
+    # Audit 09-25: the deadline was only checked between chunks, so one slow read could
+    # stretch the wait. Now it's a hard limit on the whole answer.
+    monkeypatch.setattr(chat.config, "ANSWER_DEADLINE_S", 0.05)
+
+    async def stalls(history, topic, screen=""):
+        yield {"type": "token", "text": "Starting…"}
+        await asyncio.sleep(5)                      # provider hangs mid-answer
+        yield {"type": "done", "handoff": False, "model": "m"}
+    monkeypatch.setattr(chat, "stream_answer", stalls)
+    body = _post([{"role": "user", "content": "What does Cadre do?"}]).text
+    assert "event: error" in body and "hello@gocadre.ai" in body
+    assert SAVED[-1]["outcome"] == "error"

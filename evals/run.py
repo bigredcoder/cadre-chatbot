@@ -5,6 +5,9 @@ Usage:
   .venv/bin/python -m evals.run --model openai/gpt-4.1-nano --out evals/results/x.json
   .venv/bin/python -m evals.run --no-jev                # benchmark: model-only routing
   .venv/bin/python -m evals.run --repeat 3              # critical cases run 3x
+  .venv/bin/python -m evals.run --only portal-where-is-it,gap-soc2-certification
+  .venv/bin/python -m evals.run --record-routes r.json  # save each case's routing
+  .venv/bin/python -m evals.run --routes r.json         # replay saved routing
 
 Checks are deterministic string checks (research §8: prefer code over an AI judge).
 Cases marked `judge: human` are scored by code too, but flagged for Brian's review.

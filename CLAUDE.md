@@ -24,7 +24,7 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 
 ## Layout (target; check what exists before assuming)
 - `app/main.py`: routes only (HTTP in, Server-Sent Events out). No business logic here.
-- `app/chat.py`: one chat turn: route → answer → decide the handoff → save. Per-stage deadlines.
+- `app/chat.py`: one chat turn: redact → route → answer → decide the handoff → save. Per-stage deadlines.
 - `app/config.py`: every model name, threshold, and limit. No magic numbers elsewhere.
 - `app/router.py`: Jev routing plus the fallback to the chat model
 - `app/answer.py`: builds the prompt, calls OpenRouter, streams

@@ -30,9 +30,10 @@ ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash")
 ANSWER_MAX_TOKENS = 500      # hard cap per reply: keeps answers short and spend bounded
 ANSWER_TEMPERATURE = 0.2     # low: we want consistent, grounded answers, not creativity
 ANSWER_TIMEOUT_S = 15         # longest wait for the next piece of the answer
-ANSWER_DEADLINE_S = 25        # whole answer; past this the visitor gets the fallback
+ANSWER_DEADLINE_S = 25        # whole answer, enforced as a hard limit in chat.py
 # Deadlines per turn stage (audit 09-24: without them a hung provider meant 80s+ of waiting).
-# Worst case now: route 10 + answer 25 + answer check 4 = 39s, then the fallback message.
+# Hard limits (chat.py): route 10 + answer 25 + answer check 4 = 39 s, then the fallback
+# message; saving the transcript can add up to SAVE_TIMEOUT_S before the stream closes.
 ROUTE_DEADLINE_S = 10
 ANSWER_CHECK_DEADLINE_S = 4
 
@@ -49,8 +50,8 @@ JEV_MODEL = "typesafe-ai/jev"
 JEV_TIMEOUT_S = 6
 JEV_RETRY_DELAY_S = 0.3   # one retry on 429/503 (measured 09-23: Jev rate-limits under load)
 # Below this, Jev's topic isn't trusted and the chat model classifies instead.
-# ESTIMATE: 0.6 is a starting point; Phase 6 evals tune it (research findings: validate
-# confidence against labeled outcomes before trusting it as a threshold).
+# ESTIMATE, then checked on 29 recorded routes and kept at 0.6 (docs/jev-routing.md,
+# "Why these numbers").
 ROUTE_MIN_CONFIDENCE = 0.6
 HUMAN_REQUEST_THRESHOLD = 0.7    # Jev's "explicitly asking for a person?" probability
 ANSWERED_THRESHOLD = 0.7         # Jev's "did the reply fully answer it?" (ESTIMATE; evals tune)

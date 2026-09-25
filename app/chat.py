@@ -7,7 +7,7 @@ the friendly fallback. Never a blank bubble, a stack trace, or a spinner that ne
 import asyncio
 import logging
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 
 from app import config
 from app.answer import AnswerError, stream_answer
@@ -72,6 +72,23 @@ async def _offer_after_answer(decision: Route, model_handoff: bool, question: st
     return answered is not True, note
 
 
+async def _within(stream: AsyncGenerator[dict, None], seconds: float) -> AsyncIterator[dict]:
+    """Pass the answer stream through, but stop it at a hard total deadline. (Audit 09-25: the
+    deadline was only checked between chunks, so one slow read could stretch it to ~40 s.)"""
+    loop = asyncio.get_running_loop()
+    end = loop.time() + seconds
+    try:
+        while True:
+            try:
+                yield await asyncio.wait_for(stream.__anext__(), max(end - loop.time(), 0.01))
+            except StopAsyncIteration:
+                return
+            except TimeoutError as err:
+                raise AnswerError("answer took too long") from err
+    finally:
+        await stream.aclose()
+
+
 async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> AsyncIterator[tuple[str, dict]]:
     """Yield (event, data) pairs: route, token..., done; or error. Saves the turn at the end."""
     # Personal details never reach the model providers (OpenRouter, Jev): the visitor's
@@ -104,7 +121,8 @@ async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> As
 
     reply, done = "", {}
     try:
-        async for item in stream_answer(history, decision.topic, _screen(decision)):
+        stream = stream_answer(history, decision.topic, _screen(decision))
+        async for item in _within(stream, config.ANSWER_DEADLINE_S):
             kind = item.pop("type")
             if kind == "token":
                 reply += item["text"]
@@ -124,7 +142,8 @@ async def run_turn(session_id: str, history: list[dict], oidc: str | None) -> As
         await save_turn({**turn, "assistant_message": None, "outcome": "error"})
         return
 
-    # Saved after the visitor already has the full answer, so it never slows the chat
+    # Saved after the last event is sent. The widget still waits for the stream to close, so a
+    # slow save can hold the input for up to SAVE_TIMEOUT_S (3 s); usually well under a second.
     await save_turn({
         **turn, "assistant_message": reply, "handoff": done.get("handoff"),
         "model_handoff": done.get("model_handoff"),

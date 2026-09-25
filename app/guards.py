@@ -13,7 +13,7 @@ Limitation of layer 2: this counter lives in memory, so each warm serverless ins
 separately and a cold start resets it. It stops a casual script or a stuck retry loop, not a
 determined attacker. The hard ceilings are the model key's own spend limit and the server-side
 caps in main.py/config.py (message length, 8 messages of history, max tokens per reply, and
-a deadline per turn). Production would move this to a shared store or Vercel's firewall rules (plan.md, "What's next").
+a deadline per turn). Production would move layer 2 to a shared store (plan.md, "What's next").
 """
 import time
 from collections import defaultdict, deque

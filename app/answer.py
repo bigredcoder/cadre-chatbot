@@ -11,7 +11,7 @@ Two safety details live here, not in the browser:
 import json
 import re
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 
 import httpx
 
@@ -45,7 +45,7 @@ def _visible(text: str) -> str:
     return clean
 
 
-async def stream_answer(history: list[dict], topic: str, screen: str = "") -> AsyncIterator[dict]:
+async def stream_answer(history: list[dict], topic: str, screen: str = "") -> AsyncGenerator[dict, None]:
     """Yield {"type": "token", "text": ...} chunks, then one {"type": "done", ...} summary."""
     key = config.openrouter_key()
     if not key:
@@ -74,8 +74,6 @@ async def stream_answer(history: list[dict], topic: str, screen: str = "") -> As
             async for line in resp.aiter_lines():
                 if not line.startswith("data: ") or line == "data: [DONE]":
                     continue  # skips keep-alive comments and the end marker
-                if time.monotonic() - started > config.ANSWER_DEADLINE_S:
-                    raise AnswerError("answer took too long")
                 chunk = json.loads(line[6:])
                 if "error" in chunk:
                     raise AnswerError(str(chunk["error"].get("message", "model error")))

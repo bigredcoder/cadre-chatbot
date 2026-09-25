@@ -4,7 +4,7 @@ Unit tests (`tests/`) check the code with a faked network. **Evals** send real q
 through the real router and model, then score the replies. They cost a few cents per run.
 
 - `cases.yaml`: the test cases. **Brian owns the final list.**
-- `run.py`: runs them. `python -m evals.run [--model ID] [--no-jev] [--repeat N] [--out FILE]`
+- `run.py`: runs them. `python -m evals.run [--model ID] [--no-jev] [--repeat N] [--only id1,id2] [--out FILE] [--record-routes FILE] [--routes FILE]`
 - `results/`: saved scorecards (JSON) for comparisons.
 
 ## Case schema

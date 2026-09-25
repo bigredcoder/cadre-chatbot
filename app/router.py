@@ -5,8 +5,9 @@ Order of decisions:
    yes/no: "is the visitor explicitly asking for a person?"
 2. If Jev is unsure (topic probability below ROUTE_MIN_CONFIDENCE) or unreachable, the
    chat model classifies instead. The demo never depends on a week-old service.
-3. Handoff is decided by rules, not by the model's enthusiasm:
-   the topic is in HANDOFF_TOPICS, or the visitor explicitly asked for a person.
+3. Rule handoff: the topic is in HANDOFF_TOPICS, or the visitor explicitly asked for a person.
+   app/chat.py may also keep a handoff the answer model adds, after a second Jev check
+   (answered_fully, below).
    (Phase 1 spike: a vague "needs a human?" score was unreliable. Research findings:
    model confidence isn't calibrated correctness.)
 """
