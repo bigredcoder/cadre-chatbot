@@ -16,3 +16,5 @@ node_modules/
 # os
 .DS_Store
 .mypy_cache/
+# local-only editor/preview config (absolute paths to one machine)
+.claude/launch.json

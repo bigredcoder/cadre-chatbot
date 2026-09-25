@@ -37,12 +37,12 @@
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 61 unit tests (Python plus the widget's JS rendering), 10 browser tests (desktop plus iPhone
+- 62 unit tests (Python plus the widget's JS rendering), 10 browser tests (desktop plus iPhone
   WebKit), and 26 answer-quality evals scored by code.
 - Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
 
 ## Evidence in numbers
-- Evals: **26/26**, topic and handoff accuracy 100% (`evals/results/audit-fixes.json`).
+- Evals: **26/26**, topic and handoff accuracy 100% (latest run: `evals/results/screen-hint.json`).
 - Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): 51 vs. 44 of 52 correct, routing
   0.38s vs. 0.66s.
 - Cost: about $0.001 per answer; about $10/month fixed (plan.md §5a).
