@@ -742,3 +742,16 @@ and never judged it as a visitor would.
   removed before saving; the example improves the tone.) New eval case.
 - `evals/compare.py` no longer hard-codes "26 cases".
 - **Checked:** evals 28/28 (topic and handoff 100%), 73 unit tests; test counts refreshed.
+
+**09-25 · Audit: `.claude/` and `evals/`** · commit _pending_
+- **Commit gate proven both ways:** with a planted lint error the hook blocked the commit (exit
+  2 with the ruff output); a clean tree passed; non-commit commands pass through.
+- **Agents and commands** match the code (fixed in the morning's docs audit). Evidence of use:
+  site-researcher (plan.md §4b), eval-writer (AI-bug log), code-reviewer (8 fixes on 09-23; the
+  recorded `/ship` run). `/add-knowledge` hasn't been run for real yet: the one fact added since
+  came from the brief, and the command covers cadre.ai pages.
+- **`evals/README.md`:** added a guide to the 60+ files in `results/`, with one line per change
+  run and its score.
+- **Live database checked against `db/schema.sql` (09-25):** the same 17 columns; the public key
+  has INSERT only; one policy (insert); the nightly 30-day deletion job is scheduled (03:17);
+  172 rows, with zero emails, phone numbers, or card numbers left in visitor messages.

@@ -38,3 +38,31 @@ A failure's severity comes from *what* failed, not just the case:
 Each case passes or fails, and its severity counts. **The launch gate is zero critical
 failures.** A critical failure is never averaged away by other passes. Critical cases run
 3× (`--repeat 3`) because one good run isn't reliability evidence.
+
+## What's in `results/`
+**Model comparison (09-23), 11 models × 52 runs:**
+- `full-grid.md`: every model, with and without Jev. Start here.
+- `compare-fixed.md` and `compare-fixed-<model>.json`: identical recorded Jev routes for every
+  model (`routes-jev.json`, recorded by `record-pass.json`), so only the answer model varies.
+  Failure examples with real replies: `compare-fixed-failures.md`.
+- `compare-nojev.md`, `compare-nojev-<model>.json`, `compare-nojev-failures.md`: each model
+  routes itself.
+- `invalid-parallel-run/`: the first comparison, thrown out because Jev rate limits under
+  parallel load contaminated the routing. Kept as evidence (see build-process.md, Phase 6).
+
+**Jev benchmark (09-23), same model with and without Jev:** `bench-with-jev.json`,
+`bench-without-jev.json`, `bench-failures.md`.
+
+**One run per change**, the current model on the full set (newest last):
+| File | Change it checked | Result |
+|---|---|---|
+| `baseline-gemini-2.5-flash-lite.json` | first baseline (earlier model) | 23/26 |
+| `post-review.json` | code-reviewer fixes | 25/26 |
+| `offer-fix.json` | needless strategist offers | 25/26 |
+| `audit-fixes.json` | pre-submission audit fixes | 26/26 |
+| `pii-redaction.json` | redaction before model calls | 26/26 |
+| `screen-hint.json` | model told what's on screen | 26/26 |
+| `deadline-fix.json` | hard answer deadline, no-echo rule | 26/26 |
+| `chat-audit.json` | chat.py audit | 26/26 |
+| `answer-audit.json` | answer.py audit | 26/26 |
+| `content-audit.json` | partner fact, prompt v4, 2 new cases | 28/28 |
