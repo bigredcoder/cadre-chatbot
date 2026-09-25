@@ -668,3 +668,14 @@ and never judged it as a visitor would.
 - **Noted, not changed:** if routing itself crashed, that turn wouldn't be saved. `route()` is
   built never to raise (every failure falls back), so this is practically unreachable.
 - **Checked:** ruff, mypy, 65 unit tests, evals 26/26 (topic and handoff 100%).
+
+**09-25 · File-by-file audit: `app/router.py`** · commit _pending_
+- **Found:** `route()` promised "never raises", but both the Jev step and the fallback caught
+  only the errors we expected. A malformed Jev answer (AttributeError) or an empty model reply
+  (IndexError) escaped, and a good question got the error message. **Fixed:** any surprise
+  from Jev goes to the fallback; any surprise in the fallback gives the neutral default route.
+  Both are logged (visible in Vercel logs). Test added.
+- **Noted, not changed:** if Jev is slow twice (6 s, retry, 6 s), the 10 s routing deadline
+  in `chat.py` fires first, so the neutral default is used instead of the fallback classifier.
+  The visitor still gets an answer.
+- **Checked:** ruff, mypy, 66 unit tests.

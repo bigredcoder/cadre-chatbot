@@ -13,12 +13,15 @@ Order of decisions:
 """
 import asyncio
 import json
+import logging
 import time
 from dataclasses import asdict, dataclass
 
 import httpx
 
 from app import config
+
+log = logging.getLogger("cadence.router")
 
 
 @dataclass
@@ -140,7 +143,8 @@ async def _route(history: list[dict], request_token: str | None) -> Route:
             note = f"jev unsure ({topic} {confidence:.2f})"
         except httpx.HTTPStatusError as err:
             note = f"jev unavailable (HTTP {err.response.status_code})"
-        except (httpx.HTTPError, KeyError, TypeError, ValueError) as err:
+        except Exception as err:  # deliberate: any surprise from Jev → the fallback routes
+            log.warning("jev failed; falling back", exc_info=True)  # visible in Vercel logs
             note = f"jev unavailable ({type(err).__name__})"
     elif not note:
         note = "no gateway credential"
@@ -148,7 +152,9 @@ async def _route(history: list[dict], request_token: str | None) -> Route:
     try:
         topic, asks, cost = await _ask_model(history)
         return _decide(topic, None, "fallback", asks, note, cost=spent + cost)
-    except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError) as err:
+    except Exception as err:  # deliberate: routing never raises (audit 09-25: an odd model
+        # response, e.g. an empty "choices" list, used to escape as IndexError)
+        log.warning("fallback routing failed; using the default route", exc_info=True)
         return _decide("services", None, "default", False,
                        f"{note}; fallback failed ({type(err).__name__})")
 

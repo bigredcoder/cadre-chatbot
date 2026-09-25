@@ -101,3 +101,19 @@ def test_jev_rate_limit_is_retried_once(monkeypatch):
     monkeypatch.setattr(config, "JEV_RETRY_DELAY_S", 0)
     r = _run(router.route(HISTORY, "tok"))
     assert calls["n"] == 2 and r.router == "jev" and r.topic == "industries"
+
+
+def test_odd_responses_never_crash_routing(monkeypatch):
+    # Audit 09-25: route() promised "never raises", but a malformed Jev answer (probabilities
+    # as a list → AttributeError) or an empty model reply (choices [] → IndexError) escaped.
+    async def odd_jev(history, token):
+        return ({"topic": {"choice": "pricing", "probabilities": ["not", "a", "dict"]},
+                 "asks_for_human": {"probability": 0.1}}, 0.0)
+
+    async def empty_model(history):
+        raise IndexError("list index out of range")   # like an empty "choices" list
+    monkeypatch.setattr(router, "_ask_jev", odd_jev)
+    monkeypatch.setattr(router, "_ask_model", empty_model)
+    r = _run(router.route(HISTORY, "tok"))
+    assert (r.topic, r.router) == ("services", "default")
+    assert "AttributeError" in r.note and "IndexError" in r.note
