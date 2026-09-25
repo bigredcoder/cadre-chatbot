@@ -743,7 +743,7 @@ and never judged it as a visitor would.
 - `evals/compare.py` no longer hard-codes "26 cases".
 - **Checked:** evals 28/28 (topic and handoff 100%), 73 unit tests; test counts refreshed.
 
-**09-25 · Audit: `.claude/` and `evals/`** · commit _pending_
+**09-25 · Audit: `.claude/` and `evals/`** · commit `b7cc5e0`
 - **Commit gate proven both ways:** with a planted lint error the hook blocked the commit (exit
   2 with the ruff output); a clean tree passed; non-commit commands pass through.
 - **Agents and commands** match the code (fixed in the morning's docs audit). Evidence of use:
