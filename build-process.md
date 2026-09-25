@@ -638,7 +638,7 @@ and never judged it as a visitor would.
   handoff form says "Demo: nothing is sent", and `/privacy.html` says it's a take-home demo.
 - Checked: desktop and iPhone screenshots, browser tests 10/10 (local).
 
-**09-25 · Docs-vs-code audit, a hard answer deadline, and a no-echo safety rule** · commit _pending_
+**09-25 · Docs-vs-code audit, a hard answer deadline, and a no-echo safety rule** · commit `192241a`
 - **Did:** audited every document and code comment against the code (the helper subagent
   checked the other files while `plan.md` was fixed by hand). 35 findings; each was checked
   before changing anything.
