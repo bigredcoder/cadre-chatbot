@@ -85,3 +85,15 @@ def test_budgets_and_revenue_are_not_mistaken_for_phones():
         assert transcripts.redact(text) == text
     for phone in ("858-555-0199", "555-0199", "(619) 555-0134", "+44 20 7946 0958", "6195550134"):
         assert transcripts.redact(f"call {phone}") == "call [phone removed]", phone
+
+
+def test_any_save_failure_is_swallowed_not_raised(monkeypatch):
+    # Audit 09-25: only network errors were caught; anything else escaped after the answer
+    # had already been sent, and the widget could then replace the answer with the error text.
+    monkeypatch.setattr(transcripts.config, "SAVE_TURNS", True)
+
+    class Boom:
+        def __init__(self, **kw):
+            raise RuntimeError("unexpected")
+    monkeypatch.setattr(transcripts.httpx, "AsyncClient", Boom)
+    assert asyncio.run(transcripts.save_turn({"session_id": "s" * 8, "user_message": "hi"})) is False

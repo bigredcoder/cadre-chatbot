@@ -80,6 +80,7 @@ async def save_turn(row: dict) -> bool:
             log.warning("transcript save failed: HTTP %s", resp.status_code)
             return False
         return True
-    except httpx.HTTPError as err:
-        log.warning("transcript save failed: %s", type(err).__name__)
+    except Exception:  # deliberate: saving must never break a chat (audit 09-25: only network
+        # errors were caught, so any other failure escaped after the answer was already sent)
+        log.warning("transcript save failed", exc_info=True)
         return False

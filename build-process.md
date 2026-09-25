@@ -690,3 +690,14 @@ and never judged it as a visitor would.
 - **Noted, not changed:** an answer that hits the 500-token cap would stop mid-sentence with no
   flag. Answers are 2–4 sentences by design, and no eval case comes close.
 - **Checked:** ruff, mypy, 72 unit tests, evals 26/26 (topic and handoff 100%).
+
+**09-25 · File-by-file audit: `app/transcripts.py`** · commit _pending_
+- **Found:** `save_turn` promised "never raises" but caught only network errors. Any other
+  failure escaped after the answer was already sent, and the widget could then show the error
+  text instead of the answer. **Fixed:** every failure is logged and swallowed. Test added.
+- **Checked:** the redaction patterns (emails; US and international phones; cards with and
+  without spaces; budgets, dates, and revenue left alone), and that the kept phone number
+  matches Cadre's published one in `knowledge/cadre.md`.
+- **Queued for the `public/index.html` audit:** the widget replaces a finished answer with the
+  fallback if the stream errors after `done`.
+- **Checked:** ruff, mypy, 73 unit tests.
