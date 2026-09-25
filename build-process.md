@@ -669,7 +669,7 @@ and never judged it as a visitor would.
   built never to raise (every failure falls back), so this is practically unreachable.
 - **Checked:** ruff, mypy, 65 unit tests, evals 26/26 (topic and handoff 100%).
 
-**09-25 · File-by-file audit: `app/router.py`** · commit _pending_
+**09-25 · File-by-file audit: `app/router.py`** · commit `12921dd`
 - **Found:** `route()` promised "never raises", but both the Jev step and the fallback caught
   only the errors we expected. A malformed Jev answer (AttributeError) or an empty model reply
   (IndexError) escaped, and a good question got the error message. **Fixed:** any surprise
