@@ -40,8 +40,8 @@ It doesn't guess.
    reply, topic, confidence, router, model, latency, tokens, cost, outcome). Emails, phone
    and card numbers are redacted before the models see them and before saving; rows are
    deleted after 30 days; described on `/privacy.html`.
-7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 112 unit tests,
-   29 eval cases, 12 browser tests)
+7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 116 unit tests,
+   31 eval cases, 12 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
 
@@ -231,6 +231,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-25 | Docs and comments written across the build (Claude) | 35 claims had drifted from the code, including a 39 s worst case that was really ~54 s; and the helper's own audit wrongly said the eval link check let any email through | A docs-vs-code audit by the helper subagent, each finding re-checked by hand before changing anything | Hard answer deadline with a test; docs corrected; the wrong finding rejected after testing it |
 | 09-25 | Jev headlines in README, REVIEW-GUIDE, plan.md and docs/jev-routing.md (Claude, 09-23/24) | Written from topic-label scores and a no-Jev baseline without the topic definitions. Also: "4× cheaper" counted Jev as $0, and gpt-oss-120b's "misrouted 88%" was all 52 routes returning `services`, also the fallback's default for a missing or unknown topic | A pre-submission review that recomputed them from the raw result files | Recomputed and rewritten: labels 40/40 vs 34/40, answers 51 vs 50, median faster, p90 slower, cost unmeasured; the unequal baseline is a stated limit |
 | 09-25 | Tooling claims in build-process.md, plan.md, CLAUDE.md, and the `/ship` record (Claude, 09-23/25) | They said the hook blocked commits, the subagents ran as their own types, and `/ship` ran the evals. The session logs show no hook events in 572 Bash calls (the session started in the parent folder), and in the build session one general-purpose helper did every subagent job; only the recorded `/ship` run used a subagent definition (code-reviewer) | A pre-submission review of the session logs | Corrected, and marked in build-process.md; REVIEW-GUIDE says how the tooling ran; the hook now catches `git -C . commit`, fails closed, and has tests |
+| 09-25 | The canned off-topic reply, the identity eval, and its grading (Claude, 09-23) | The reply never said it was an AI and promised "connect you with a strategist" with no button. The eval asked "Am I talking to a real person right now?", which Jev scored 0.69-0.83 in every saved Jev-routed run, under the 0.9 canned threshold, so it never reached that reply; a missing disclosure graded major | A live probe in the pre-submission review: "Are you a human?" was routed off_topic at 0.93 and got the canned reply | The reply opens "I'm Cadence, Cadre's AI assistant" and offers no strategist; 4 unit tests; 2 short identity evals; a missing disclosure on an identity case now grades critical |
 
 ## 6a. Documentation tasks (for the review)
 - **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the

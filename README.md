@@ -68,11 +68,11 @@ Without a Jev credential, routing falls back to the chat model automatically.
 ## Test it
 | Command | What it checks | Cost |
 |---|---|---|
-| `.venv/bin/python -m pytest -q` | 112 unit tests (Python + the widget's JS rendering), network faked | $0 |
+| `.venv/bin/python -m pytest -q` | 116 unit tests (Python + the widget's JS rendering), network faked | $0 |
 | `.venv/bin/python -m pytest e2e -q` | 12 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
 | `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site (the burst now also trips the Vercel firewall rule) | ~$0.03 |
 | `.venv/bin/python tools/verify_knowledge.py` | Every knowledge quote still matches cadre.ai | $0 |
-| `.venv/bin/python -m evals.run --repeat 3` | 29 real questions, code-scored | ~$0.05 |
+| `.venv/bin/python -m evals.run --repeat 3` | 31 real questions, code-scored | ~$0.05 |
 | `.venv/bin/python -m evals.compare --routes evals/results/routes-jev.json` | The model comparison | ~$0.50 |
 
 ## How it was built

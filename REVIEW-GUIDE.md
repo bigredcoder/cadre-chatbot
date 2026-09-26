@@ -53,12 +53,14 @@
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 112 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
-  WebKit), and 29 answer-quality evals scored by code.
+- 116 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
+  WebKit), and 31 answer-quality evals scored by code.
 - Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
 
 ## Evidence in numbers
-- Evals: **28/28** on the full set (`evals/results/input-cleaning.json`), plus the new hidden-instruction case 3/3.
+- Evals: **28/28** on the full set as it then stood (28 cases, `evals/results/input-cleaning.json`),
+  plus the hidden-instruction case 3/3 and, after the canned-reply fix, the 3 identity cases 9/9
+  (`evals/results/identity-fix.json`).
 - Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): topic labels 40/40 vs. 34/40;
   answer checks 51 vs. 50 of 52; routing median 0.38 s vs. 0.66 s, p90 1.3 s vs. 0.8 s.
   Jev's own cost is unmeasured (recorded $0 on free credits).

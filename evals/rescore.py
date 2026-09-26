@@ -25,7 +25,7 @@ def rescore_file(path: str, cases: dict) -> dict:
         r["problems"] = always_on_checks(result["reply"], result["error"]) + \
             case_checks(cases[r["id"]], result)
         r["passed"] = not r["problems"]
-        r["failure_severity"] = worst(r["problems"], r["severity"])
+        r["failure_severity"] = worst(r["problems"], r["severity"], r.get("category", ""))
     rs, s = data["results"], data["summary"]
     s["passed"] = sum(r["passed"] for r in rs)
     s["critical_failures"] = sum(r["failure_severity"] == "critical" for r in rs)

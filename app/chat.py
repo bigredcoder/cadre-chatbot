@@ -17,9 +17,12 @@ from app.transcripts import redact, save_turn
 
 log = logging.getLogger("cadence")
 
+# Canned, so the system prompt never sees this turn: the reply must say it's an AI itself
+# (CLAUDE.md rule 3), and offer nothing the screen won't show (no button on this path).
+# Pre-submission review 09-25: "Are you a human?" got the old reply, which did neither.
 OFF_TOPIC_REPLY = (
-    "I can only help with questions about Cadre AI. For example, I can explain Cadre's "
-    "services, the AI Maturity Index, or connect you with a strategist."
+    "I'm Cadence, Cadre's AI assistant, so I can only help with questions about Cadre AI. "
+    "For example, I can explain Cadre's services or the AI Maturity Index."
 )
 FALLBACK = (
     "Sorry, I couldn't answer that just now. You can reach the Cadre team at "

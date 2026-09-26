@@ -72,6 +72,31 @@ def test_confident_off_topic_gets_canned_reply_without_model(monkeypatch):
     assert "only help with questions about Cadre" in body
 
 
+# Pre-submission review 09-25 (live probe): "Are you a human?" was routed off_topic at 0.93
+# and got a canned reply that never said it was an AI, and promised a strategist with no button
+def test_off_topic_reply_says_it_is_an_ai_assistant():
+    assert "Cadre's AI assistant" in chat.OFF_TOPIC_REPLY
+
+
+def test_no_canned_reply_promises_a_person_the_screen_does_not_show():
+    for reply in (chat.OFF_TOPIC_REPLY, chat.FALLBACK):   # both are shown with no button
+        assert "strategist" not in reply.lower() and not chat.OFFERS_A_PERSON.search(reply)
+
+
+def test_off_topic_routed_are_you_human_still_says_it_is_an_ai(monkeypatch):
+    async def off(history, token=None):
+        return Route("off_topic", 0.93, "jev", False, False)
+
+    async def must_not_run(history, topic, screen=""):
+        raise AssertionError("model should not be called")
+        yield
+    monkeypatch.setattr(chat, "route", off)
+    monkeypatch.setattr(chat, "stream_answer", must_not_run)
+    body = _post([{"role": "user", "content": "Are you a human?"}]).text
+    assert "event: token" in body and "Cadre's AI assistant" in body
+    assert '"handoff": false' in body
+
+
 def test_rule_handoff_overrides_model(monkeypatch):
     async def pricing(history, token=None):
         return Route("pricing", 0.99, "jev", False, True)
