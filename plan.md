@@ -21,7 +21,8 @@ turn the high-value ones into leads for a strategist.
 - Zero invented facts
 - Cost per conversation and response time
 
-**Sources of truth:** cadre.ai (read 2026-09-23) and the take-home brief. Nothing else.
+**Sources of truth:** cadre.ai (read 2026-09-23), the portal.gocadre.ai pages the bot links to
+(added 09-26), and the take-home brief. Nothing else.
 
 **Known gaps in public info:** pricing, whether the Maturity Index is free, portal login
 steps, security certifications and data hosting. The bot says it doesn't know and hands off.

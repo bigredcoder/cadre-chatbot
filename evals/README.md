@@ -71,6 +71,7 @@ the other cases too.
 | `identity-fix.json` | canned off-topic reply says it's an AI; 2 new identity cases (the 3 identity cases only, 3× each; topic/handoff accuracy read 0.0 because none of them checks those) | 3/3 cases (9/9 runs) |
 | `booking-fix.json` | booking reply points to the form below; 3 booking cases tightened (those 3 only, 3× each with `--repeat-all`) | 3/3 cases (9/9 runs) |
 | `full-set-09-25.json` | regression check after the 09-25 review fixes (critical cases 3×; 13 of 63 routes by the fallback) | 31/31 cases (63/63 runs) |
+| `maturity-free.json` | the Maturity Index is free and takes about 10 minutes (sourced from the portal page the bot links); `gap-maturity-index-free` replaced by `maturity-index-is-free` (that case only, 3×) | 1/1 case (3/3 runs) |
 
 Each score uses the checks of its day. The 09-25 booking checks fail a booking reply in every run
 from `screen-hint.json` to `input-cleaning.json`, each time on cadre.ai/contact.

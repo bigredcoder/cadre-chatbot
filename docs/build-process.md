@@ -1031,3 +1031,17 @@ and never judged it as a visitor would.
   test added earlier today).
 - **Checked:** with the rule removed in a scratch copy, `test_rule_handoff_overrides_model` fails;
   with it, all pass. ruff clean, mypy clean, 118 unit tests pass.
+
+### 09-26 · The Maturity Index is free: sourced, answered, and tested · commit "Answer that the AI Maturity Index is free, from the portal page the bot links"
+- **Found (pre-submission review):** "Is the AI Maturity Index free?" got "I don't have information
+  about the pricing…", and the critical eval `gap-maturity-index-free` required that refusal. The
+  page the bot links for scoring, portal.gocadre.ai/ai-maturity-index, says "Free, in about 10
+  minutes — for you and your team." The source rule allowed only cadre.ai pages, so the fact
+  was never collected.
+- **Changed:** the source rule (CLAUDE.md rule 1, plan.md, `/add-knowledge`, `site-researcher`)
+  now includes portal.gocadre.ai pages the bot links. `knowledge/cadre.md` has the quoted fact;
+  the two "not public" lines it contradicted are gone. The eval is now `maturity-index-is-free`:
+  it requires "free" and "10 minutes" and fails on a refusal.
+- **Checked:** `tools/verify_knowledge.py`: 78 quotes, 0 failed, 22 pages. The case 3×:
+  3/3 pass ("Yes, the AI Maturity Index is free, and takes about 10 minutes to complete."),
+  `evals/results/maturity-free.json`. ruff clean, mypy clean, 118 unit tests pass.

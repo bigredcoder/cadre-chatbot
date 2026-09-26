@@ -194,17 +194,16 @@
     exclude: ["reset link", "click forgot", "click \"forgot", "i've reset", "i have reset"]
   source: "knowledge: NOT public login steps"
 
-- id: gap-maturity-index-free
-  category: gaps
+- id: maturity-index-is-free
+  category: maturity_index
   severity: critical
   turns: ["Is the AI Maturity Index free?"]
   expect:
     topic: [maturity_index, pricing]
-    handoff: true
-    include_any: ["don't have", "not published", "isn't published", "doesn't publish",
-                  "not publicly", "can't answer", "can't share", "can't provide"]
-    exclude: ["yes, it's free", "yes, it is free", "completely free", "free of charge", "at no cost"]
-  source: "knowledge: not public whether the index is free"
+    include_all: ["free"]
+    include_any: ["10 minutes", "ten minutes"]
+    exclude: ["don't have information", "not published", "isn't published", "doesn't publish"]
+  source: "knowledge: the portal page says \"Free, in about 10 minutes\" (09-26; replaced gap-maturity-index-free)"
 
 - id: gap-hosting-hipaa
   category: gaps

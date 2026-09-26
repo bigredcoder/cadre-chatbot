@@ -1,0 +1,113 @@
+{
+  "summary": {
+    "model": "google/gemini-2.5-flash",
+    "router_mode": "jev",
+    "cases": 1,
+    "runs": 3,
+    "passed": 3,
+    "critical_failures": 0,
+    "major_failures": 0,
+    "topic_accuracy": 1.0,
+    "handoff_accuracy": 0.0,
+    "median_ms": 1828,
+    "p90_ms": 1828,
+    "median_route_ms": 961,
+    "avg_cost_per_turn_usd": 0.000775,
+    "total_cost_usd": 0.00233
+  },
+  "results": [
+    {
+      "id": "maturity-index-is-free",
+      "severity": "critical",
+      "category": "maturity_index",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1803,
+      "route": {
+        "topic": "maturity_index",
+        "confidence": null,
+        "router": "fallback",
+        "asks_for_human": false,
+        "handoff": false,
+        "note": "jev unavailable (HTTP 401)",
+        "route_ms": 894,
+        "route_cost_usd": 8.12e-05
+      },
+      "done": {
+        "handoff": false,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 898,
+        "input_tokens": 4439,
+        "output_tokens": 39,
+        "cost_usd": 0.0014292,
+        "model_handoff": false
+      },
+      "reply": "Yes, the AI Maturity Index is free, and takes about 10 minutes to complete. You can get scored at portal.gocadre.ai/ai-maturity-index.",
+      "judge": "auto",
+      "run": 1
+    },
+    {
+      "id": "maturity-index-is-free",
+      "severity": "critical",
+      "category": "maturity_index",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1917,
+      "route": {
+        "topic": "maturity_index",
+        "confidence": null,
+        "router": "fallback",
+        "asks_for_human": false,
+        "handoff": false,
+        "note": "jev unavailable (HTTP 401)",
+        "route_ms": 961,
+        "route_cost_usd": 8.12e-05
+      },
+      "done": {
+        "handoff": false,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 951,
+        "input_tokens": 4439,
+        "output_tokens": 38,
+        "cost_usd": 0.00032429,
+        "model_handoff": false
+      },
+      "reply": "Yes, the AI Maturity Index is free and takes about 10 minutes to complete. You can get scored at portal.gocadre.ai/ai-maturity-index.",
+      "judge": "auto",
+      "run": 2
+    },
+    {
+      "id": "maturity-index-is-free",
+      "severity": "critical",
+      "category": "maturity_index",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1828,
+      "route": {
+        "topic": "maturity_index",
+        "confidence": null,
+        "router": "fallback",
+        "asks_for_human": false,
+        "handoff": false,
+        "note": "jev unavailable (HTTP 401)",
+        "route_ms": 967,
+        "route_cost_usd": 8.12e-05
+      },
+      "done": {
+        "handoff": false,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 856,
+        "input_tokens": 4439,
+        "output_tokens": 40,
+        "cost_usd": 0.00032929,
+        "model_handoff": false
+      },
+      "reply": "Yes, the AI Maturity Index is free, and it takes about 10 minutes to complete. You can get scored at portal.gocadre.ai/ai-maturity-index.",
+      "judge": "auto",
+      "run": 3
+    }
+  ]
+}

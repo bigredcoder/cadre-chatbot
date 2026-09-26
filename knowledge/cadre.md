@@ -74,6 +74,7 @@ There are four services: AI Strategy, AI Leadership & Facilitation, AI Engineeri
 - What it is. — "It scores your company across our eight-pillar framework for AI transformation." — https://cadre.ai/
 - What you get. — "You'll get a grade in each area with clear explanations, plus actionable insights on how to improve" — https://cadre.ai/
 - How to get scored: the "Get Your AI Maturity Index" link goes to https://portal.gocadre.ai/ai-maturity-index — "Get Your AI Maturity Index" — https://cadre.ai/
+- Cost and time: free, about 10 minutes. — "Free, in about 10 minutes — for you and your team." — https://portal.gocadre.ai/ai-maturity-index
 - The eight pillars (framework). — "The 8 Pillars of AI Transformation" — https://cadre.ai/strategy
 - Pillar 1. — "Build your dedicated AI team" — https://cadre.ai/strategy
 - Pillar 2. — "Deploy your AI Command Center" — https://cadre.ai/strategy
@@ -112,8 +113,7 @@ There are four services: AI Strategy, AI Leadership & Facilitation, AI Engineeri
 - Why use a partner (Cadre cites MIT). — "According to MIT, over 90% of AI initiatives fail" — https://cadre.ai/
 
 ## Not public: never state, always offer a strategist
-- Pricing or cost for any service, the Intensive, workshops, or the Maturity Index
-- Whether the Maturity Index is free, or how long it takes
+- Pricing or cost for any service, the Intensive, or workshops (the Maturity Index is free: see above)
 - Contract terms or engagement length (other than the 45-day Intensive)
 - Portal login or account help
 - Security certifications, data hosting, retention

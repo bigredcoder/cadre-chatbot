@@ -47,8 +47,8 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - Don't contradict a finding without logging why in plan.md §3 (Key decisions).
 
 ## Hard rules
-1. **No fact without a source.** Every line in `knowledge/` cites a cadre.ai URL or
-   the brief. If you can't cite it, it doesn't go in.
+1. **No fact without a source.** Every line in `knowledge/` cites a Cadre page (cadre.ai, or a
+   portal.gocadre.ai page the bot links to) or the brief. If you can't cite it, it doesn't go in.
 2. **The bot never invents** prices, client names, results, security policies, or
    pillar names. Unknown → say so and offer the handoff.
 3. **Cadence always identifies as an AI assistant.**

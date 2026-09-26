@@ -4,7 +4,7 @@ argument-hint: "<cadre.ai URL>"
 ---
 Add knowledge from $ARGUMENTS to `knowledge/cadre.md`.
 
-1. Only cadre.ai pages. Use the `site-researcher` subagent to extract candidate facts, each
+1. Only Cadre pages: cadre.ai, or portal.gocadre.ai pages the bot links to. Use the `site-researcher` subagent to extract candidate facts, each
    with a short exact quote and the URL.
 2. Show Brian the proposed lines and wait for approval. Don't edit the file before that.
 3. After approval, add the lines in the right section (format: fact — "exact quote" — URL).
