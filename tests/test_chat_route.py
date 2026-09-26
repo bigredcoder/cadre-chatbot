@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app import chat, main
 from app.answer import AnswerError
 from app.router import Route
+from evals.run import parse_sse
 
 client = TestClient(main.app)
 
@@ -30,6 +31,11 @@ def fake_router_and_storage(monkeypatch):
 
 def _post(messages):
     return client.post("/api/chat", json={"session_id": "test-session-1", "messages": messages})
+
+
+def _events(text):
+    # Parsed events, so an assert reads the done event, not "handoff" text in the route event
+    return parse_sse(_post([{"role": "user", "content": text}]).text)
 
 
 def test_streams_route_tokens_and_done(monkeypatch):
@@ -92,9 +98,8 @@ def test_off_topic_routed_are_you_human_still_says_it_is_an_ai(monkeypatch):
         yield
     monkeypatch.setattr(chat, "route", off)
     monkeypatch.setattr(chat, "stream_answer", must_not_run)
-    body = _post([{"role": "user", "content": "Are you a human?"}]).text
-    assert "event: token" in body and "Cadre's AI assistant" in body
-    assert '"handoff": false' in body
+    ev = _events("Are you a human?")
+    assert "Cadre's AI assistant" in ev["reply"] and ev["done"]["handoff"] is False
 
 
 def test_rule_handoff_overrides_model(monkeypatch):
@@ -106,8 +111,8 @@ def test_rule_handoff_overrides_model(monkeypatch):
         yield {"type": "done", "handoff": False, "model": "m"}
     monkeypatch.setattr(chat, "route", pricing)
     monkeypatch.setattr(chat, "stream_answer", fake)
-    body = _post([{"role": "user", "content": "price?"}]).text
-    assert '"handoff": true' in body and '"model_handoff": false' in body
+    done = _events("price?")["done"]
+    assert done["handoff"] is True and done["model_handoff"] is False
 
 
 def test_each_turn_is_saved_once_with_outcome(monkeypatch):
@@ -204,8 +209,8 @@ def test_unrequested_offer_skipped_when_jev_says_answered(monkeypatch):
     async def yes(q, reply, token=None):
         return True
     monkeypatch.setattr(chat, "answered_fully", yes)
-    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
-    assert '"handoff": false' in body and "offer skipped" in body
+    done = _events("Where is the portal?")["done"]
+    assert done["handoff"] is False and "offer skipped" in done["handoff_check"]
 
 
 def test_unrequested_offer_kept_when_not_answered(monkeypatch):
@@ -214,7 +219,8 @@ def test_unrequested_offer_kept_when_not_answered(monkeypatch):
     async def no(q, reply, token=None):
         return False
     monkeypatch.setattr(chat, "answered_fully", no)
-    assert '"handoff": true' in _post([{"role": "user", "content": "SOC 2?"}]).text
+    done = _events("SOC 2?")["done"]
+    assert done["handoff"] is True and "not answered" in done["handoff_check"]
 
 
 def test_offer_kept_when_check_unavailable(monkeypatch):
@@ -223,8 +229,8 @@ def test_offer_kept_when_check_unavailable(monkeypatch):
     async def down(q, reply, token=None):
         return None
     monkeypatch.setattr(chat, "answered_fully", down)
-    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
-    assert '"handoff": true' in body and "check unavailable" in body
+    done = _events("Where is the portal?")["done"]
+    assert done["handoff"] is True and "check unavailable" in done["handoff_check"]
 
 
 def test_offer_kept_when_the_reply_itself_offers_a_person(monkeypatch):
@@ -238,8 +244,8 @@ def test_offer_kept_when_the_reply_itself_offers_a_person(monkeypatch):
     async def yes(q, reply, token=None):
         return True
     monkeypatch.setattr(chat, "answered_fully", yes)
-    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
-    assert '"handoff": true' in body and "reply offers a person" in body
+    done = _events("Where is the portal?")["done"]
+    assert done["handoff"] is True and "reply offers a person" in done["handoff_check"]
 
 
 def test_slow_answer_check_keeps_the_offer(monkeypatch):
@@ -250,8 +256,8 @@ def test_slow_answer_check_keeps_the_offer(monkeypatch):
         await asyncio.sleep(1)
         return True
     monkeypatch.setattr(chat, "answered_fully", slow)
-    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
-    assert '"handoff": true' in body and "check unavailable" in body
+    done = _events("Where is the portal?")["done"]
+    assert done["handoff"] is True and "check unavailable" in done["handoff_check"]
 
 
 def test_slow_routing_times_out_and_still_answers(monkeypatch):
@@ -343,9 +349,9 @@ def test_a_broken_answer_check_never_replaces_a_finished_answer(monkeypatch):
     async def broken(q, reply, token=None):
         raise RuntimeError("unexpected")
     monkeypatch.setattr(chat, "answered_fully", broken)
-    body = _post([{"role": "user", "content": "Where is the portal?"}]).text
-    assert "event: error" not in body and "portal.gocadre.ai" in body
-    assert '"handoff": true' in body and "check unavailable" in body
+    ev = _events("Where is the portal?")
+    assert ev["error"] is None and "portal.gocadre.ai" in ev["reply"]
+    assert ev["done"]["handoff"] is True and "check unavailable" in ev["done"]["handoff_check"]
 
 
 def test_offer_shows_when_the_reply_promises_a_person_even_without_the_tag(monkeypatch):
@@ -354,8 +360,8 @@ def test_offer_shows_when_the_reply_promises_a_person_even_without_the_tag(monke
         yield {"type": "token", "text": "For login help, I can connect you with a strategist."}
         yield {"type": "done", "handoff": False, "model": "m"}   # no [HANDOFF] tag
     monkeypatch.setattr(chat, "stream_answer", fake)
-    body = _post([{"role": "user", "content": "I can't log in"}]).text
-    assert '"handoff": true' in body and "reply offers a person" in body
+    done = _events("I can't log in")["done"]
+    assert done["handoff"] is True and "reply offers a person" in done["handoff_check"]
 
 
 def test_invisible_characters_never_reach_the_model(monkeypatch):

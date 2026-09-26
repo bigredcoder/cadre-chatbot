@@ -95,7 +95,7 @@ Start Claude Code in this folder so the commit gate (`.claude/hooks/pre_commit_g
   (don't `pip install -e .`: the repo isn't laid out as a package, and it fails)
 - Run locally: `.venv/bin/uvicorn app.main:app --reload` (then open http://localhost:8000)
 - Unit tests (Python + JS): `.venv/bin/python -m pytest -q` (JS tests need Node; skipped without it)
-- Browser tests: `.venv/bin/python -m pytest e2e -q` (live site; `BASE_URL=` for local)
+- Browser tests: `.venv/bin/python -m pytest e2e -q` (local server on :8000 first; `BASE_URL=` for the live site)
 - Answer-quality tests: `.venv/bin/python -m evals.run` (costs a few cents; uses the configured model)
 - Lint and types: `.venv/bin/ruff check .` and `.venv/bin/python -m mypy app`
 - Deploy: push to `main` on GitHub (Vercel auto-deploys). Preview: `vercel deploy`

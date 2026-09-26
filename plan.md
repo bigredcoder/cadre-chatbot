@@ -41,7 +41,7 @@ It doesn't guess.
    and card numbers are redacted before the models see them and before saving; rows are
    deleted after 30 days; described on `/privacy.html`.
 7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 118 unit tests,
-   31 eval cases, 12 browser tests)
+   31 eval cases, 13 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
 

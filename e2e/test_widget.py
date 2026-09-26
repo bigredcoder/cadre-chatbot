@@ -1,24 +1,34 @@
 """Browser tests: drive the real widget like a visitor, on desktop Chromium AND an iPhone
 profile in WebKit (Safari's engine). Phone tests fail if anything is wider than the screen.
 
-Runs against the LIVE site by default (real Jev, real model: a few cents per run):
+Runs against a LOCAL server by default. Start one, then run the tests in another shell:
+  RATE_LIMIT_PER_MINUTE=1000 SAVE_TURNS=0 .venv/bin/uvicorn app.main:app --port 8000
   .venv/bin/python -m pytest e2e -q
-Against local:  BASE_URL=http://localhost:8000 .venv/bin/python -m pytest e2e -q
-  (start the local server with RATE_LIMIT_PER_MINUTE=1000: repeated runs from one machine
-   otherwise hit the per-visitor limit, 12 messages/minute, and answers time out)
-Against the live site, leave a minute between full runs: the suite sends ~8 chat messages,
-and the app allows 12 a minute per visitor, so back-to-back runs get "You're sending messages
-quickly" and the answer tests time out (seen 09-25; the rate limit working as designed).
+  (RATE_LIMIT_PER_MINUTE: repeated runs from one machine otherwise hit the per-visitor limit,
+   12 messages/minute, and answers time out. SAVE_TURNS=0: test turns aren't saved.)
+The 5 tests marked `model` call the real model on the server's key (a few cents per run);
+`-m "not model"` skips them.
+The live site only when you name it (real Jev, real model):
+  BASE_URL=https://cadre-chatbot-xi.vercel.app .venv/bin/python -m pytest e2e -q
+There, leave a minute between full runs: the suite sends 5 chat messages and the app allows
+12 a minute per visitor, so back-to-back runs get "You're sending messages quickly" and the
+answer tests time out (seen 09-25; the rate limit working as designed).
 Not part of the default `pytest` run (unit tests live in tests/).
 The chat window is Deep Chat (a web component); Playwright's CSS locators see inside it.
 """
 import os
 import re
+import warnings
+from urllib.parse import urlparse
 
+import httpx
 import pytest
 from playwright.sync_api import Page, expect
 
-BASE = os.environ.get("BASE_URL", "https://cadre-chatbot-xi.vercel.app")
+BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8000")
+if urlparse(BASE).hostname not in ("127.0.0.1", "localhost"):
+    warnings.warn(f"Browser tests are running against {BASE}, not a local server. "
+                  "The `model` tests spend real model credit there.", stacklevel=1)
 ANSWER = 30_000
 INPUT = "deep-chat #text-input"
 LAST_ANSWER = "deep-chat .cad-msg >> nth=-1"
@@ -28,6 +38,15 @@ NO_OVERFLOW = """() => {
     const r = e.getBoundingClientRect(); return r.width > 0 && r.right > W + 1; }).length;
   return { page: document.documentElement.scrollWidth <= W, pageItems: wide(document), chatItems: sr ? wide(sr) : 0 };
 }"""
+
+
+@pytest.fixture(scope="session", autouse=True)
+def server_is_up():
+    try:
+        httpx.get(f"{BASE}/api/health", timeout=10).raise_for_status()
+    except httpx.HTTPError:
+        pytest.exit(f"No app at {BASE}. Start the local server (see this file's docstring) "
+                    "or set BASE_URL.", returncode=1)
 
 
 def open_chat(page: Page) -> None:
@@ -49,6 +68,7 @@ def test_opens_with_ai_disclosure_and_starters(page: Page):
     expect(page.locator("deep-chat .cad-chip", has_text="What does Cadre do?")).to_be_visible()
 
 
+@pytest.mark.model
 def test_starter_streams_a_complete_grounded_answer(page: Page):
     open_chat(page)
     page.locator("deep-chat .cad-chip", has_text="What is the AI Maturity Index?").click()
@@ -62,6 +82,7 @@ def test_starter_streams_a_complete_grounded_answer(page: Page):
     expect(page.locator("#status")).to_contain_text("maturity_index", timeout=ANSWER)
 
 
+@pytest.mark.model
 def test_pricing_offers_strategist_then_form_validates_and_confirms_once(page: Page):
     open_chat(page)
     ask(page, "How much does the 45-day intensive cost?")
@@ -78,6 +99,7 @@ def test_pricing_offers_strategist_then_form_validates_and_confirms_once(page: P
     expect(page.locator("deep-chat .cad-form-done")).to_contain_text("nothing was sent to Cadre")
 
 
+@pytest.mark.model
 def test_keyboard_only_open_ask_close(page: Page):
     page.goto(BASE)
     page.get_by_role("button", name="Ask Cadre's AI").focus()
@@ -90,6 +112,7 @@ def test_keyboard_only_open_ask_close(page: Page):
     expect(page.locator("#launcher")).to_be_focused()
 
 
+@pytest.mark.model
 def test_start_over_clears_the_conversation(page: Page):
     open_chat(page)
     ask(page, "Do you work with hotels?")
@@ -151,6 +174,7 @@ def iphone(playwright):
     browser.close()
 
 
+@pytest.mark.model
 def test_iphone_nothing_wider_than_the_screen_through_a_full_conversation(iphone: Page):
     def check(step):
         o = iphone.evaluate(NO_OVERFLOW)

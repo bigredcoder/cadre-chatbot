@@ -19,3 +19,4 @@ line-length = 100
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]   # unit tests only by default; browser tests: `pytest e2e`
+markers = ["model: browser test that calls the real chat model (costs a little)"]

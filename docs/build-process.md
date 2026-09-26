@@ -1016,3 +1016,18 @@ and never judged it as a visitor would.
   (exit 1, no zip written) on a tracked `.env.local`, `sub/.env`, `.vercel/project.json`, a
   `.vercel` symlink, `build/out.txt`, `__pycache__/m.pyc` and `.DS_Store`, and refused staged
   changes without `--allow-dirty`. ruff clean, mypy clean, 118 unit tests pass.
+
+### 09-26 · Tests that can fail; browser and load tests default to a local server · commit "Make the handoff test able to fail; point browser and load tests at localhost by default"
+- **Found (pre-submission review):** `test_rule_handoff_overrides_model` searched the raw stream
+  for `"handoff": true`, which the route event also contains, so it passed with the rule
+  deleted. Eight other tests in `tests/test_chat_route.py` matched the raw stream the same way.
+  `e2e/test_widget.py` and `tools/load_test.py` defaulted to the live site, which would spend
+  Cadre's key once it's swapped in.
+- **Changed:** those tests now parse the SSE events (`evals.run.parse_sse`) and assert on the
+  done event. The browser tests default to `http://127.0.0.1:8000`, stop with a clear message
+  if no server answers, warn when pointed elsewhere, and mark the 5 tests that call the model
+  (`-m "not model"` skips them). The load test defaults to local; `--live` targets production.
+  README, REVIEW-GUIDE, plan.md and CLAUDE.md say so; browser-test count 12 → 13 (the scroll-lock
+  test added earlier today).
+- **Checked:** with the rule removed in a scratch copy, `test_rule_handoff_overrides_model` fails;
+  with it, all pass. ruff clean, mypy clean, 118 unit tests pass.
