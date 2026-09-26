@@ -39,7 +39,8 @@ Details: `docs/jev-routing.md` (routing), `db/schema.sql` (data), `plan.md` (dec
 
 ## Evidence behind the choices
 - **Model:** 11 models, same 26 test cases, identical routing. Three scored 52/52;
-  gemini-2.5-flash was the fastest of them. See `plan.md` §5 and `evals/results/full-grid.md`.
+  gemini-2.5-flash was the fastest of them. See `docs/model-choice.md` §5 and
+  `evals/results/full-grid.md`.
 - **Jev:** gemini-2.5-flash with vs. without Jev: topic labels 40/40 vs 34/40, median routing
   0.38 s vs 0.66 s. Answers about the same (51 vs 50 of 52); p90 routing worse (1.3 s vs
   0.8 s); Jev's cost unmeasured (recorded $0 on free credits). Limits: `docs/jev-routing.md`.
@@ -77,7 +78,8 @@ Without a Jev credential, routing falls back to the chat model automatically.
 
 ## How it was built
 With Claude Code, one phase at a time, with each commit reviewed and approved.
-- `CLAUDE.md`: the rules Claude works under. `plan.md`: scope, decisions, AI-bug log.
+- `CLAUDE.md`: the rules Claude works under. `plan.md`: scope, phases, decisions.
+- `docs/ai-bug-log.md`: where Claude was wrong, how it was caught, and what changed.
 - `build-process.md`: what actually happened, step by step.
 - `.claude/agents/`: `site-researcher`, `eval-writer`, `code-reviewer` subagents.
 - `.claude/commands/`: `/eval`, `/add-knowledge`, `/ship`.
@@ -86,4 +88,4 @@ With Claude Code, one phase at a time, with each commit reviewed and approved.
 
 ## Running costs
 About **$10/month** fixed (Supabase) plus about **$0.001 per answer** (answer model; Jev's
-cost unmeasured); hosting is on Vercel's free plan. Breakdown: `plan.md` §5a.
+cost unmeasured); hosting is on Vercel's free plan. Breakdown: `docs/model-choice.md` §5a.

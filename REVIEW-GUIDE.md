@@ -14,8 +14,9 @@
 
 ## Where to look, by scoring area
 **Claude Code workflow**
-- `CLAUDE.md`: the working rules. `plan.md`: scope, decisions, and the **AI-bug log** (§6),
-  where Claude was wrong, how it was caught, and what changed.
+- `CLAUDE.md`: the working rules. `plan.md`: scope, phases, and decisions.
+- `docs/ai-bug-log.md`: the **AI-bug log**, where Claude was wrong, how it was caught, and
+  what changed.
 - `.claude/`: 3 read-only subagent definitions, 3 commands (`/ship`, `/eval`, `/add-knowledge`),
   and a commit hook that runs lint, types, and tests and blocks the commit if one fails (it loads
   only when Claude Code is started in this folder).
@@ -55,16 +56,17 @@
 **Code quality and verification**
 - 117 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
   WebKit), and 31 answer-quality evals scored by code.
-- Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
+- Model choice: why gemini-2.5-flash in `docs/model-choice.md` §5; all 11 models on the same
+  cases, with and without Jev, in `evals/results/full-grid.md`.
 
 ## Evidence in numbers
 - Evals: **31/31** cases on the full set, 63/63 runs with each critical case 3×, including the
   hidden-instruction case 3/3 (`evals/results/full-set-09-25.json`). Jev routed 50 of the 63;
   the fallback routed 13 (Jev returned HTTP 429 or 503, or its topic confidence was under 0.6).
-- Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): topic labels 40/40 vs. 34/40;
-  answer checks 51 vs. 50 of 52; routing median 0.38 s vs. 0.66 s, p90 1.3 s vs. 0.8 s.
+- Jev vs. no Jev (gemini-2.5-flash benchmark, `docs/jev-routing.md`): topic labels 40/40 vs.
+  34/40; answer checks 51 vs. 50 of 52; routing median 0.38 s vs. 0.66 s, p90 1.3 s vs. 0.8 s.
   Jev's own cost is unmeasured (recorded $0 on free credits).
-- Cost: about $0.001 per answer; about $10/month fixed (plan.md §5a).
+- Cost: about $0.001 per answer; about $10/month fixed (`docs/model-choice.md` §5a).
 
 ## Known limits (stated up front)
 - The handoff form is a demo: nothing is sent or stored.

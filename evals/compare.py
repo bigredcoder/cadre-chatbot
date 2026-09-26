@@ -22,7 +22,8 @@ CANDIDATES = [
     "openai/gpt-4.1-nano", "openai/gpt-4.1-mini", "openai/gpt-4o-mini",
     "openai/gpt-oss-120b",
     # Excluded 09-23: openai/gpt-5-nano and gpt-5-mini returned blank replies on 48-49 of 52
-    # runs (reasoning used the whole 500-token budget). They'd need reasoning settings; see plan.md.
+    # runs (reasoning used the whole 500-token budget). They'd need reasoning settings; see plan.md §7
+    # (evidence: docs/model-choice.md §5).
     "anthropic/claude-haiku-4.5",
     "mistralai/mistral-small-3.2-24b-instruct", "meta-llama/llama-4-maverick",
     "qwen/qwen3-235b-a22b-2507", "deepseek/deepseek-chat-v3.1",

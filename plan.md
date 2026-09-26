@@ -68,7 +68,7 @@ no autonomous actions.
 |---|---|---|
 | Python + FastAPI + one HTML page | Readable, matches the role, fast to deploy on Vercel | Less UI polish than a React stack |
 | **Chat window = Deep Chat** (changed 09-23) | A proven component for the solved problem (streaming, scroll, mobile); our effort goes to grounding, routing, and evals. Research: hybrid is the most practical deployment | A 387 KB dependency; self-hosted so no third-party script can take the page down |
-| Jev for routing, chat model for answers | Jev returns typed decisions with confidence; faster median routing (§5) | New (Sept 2026) service → built a fallback; cost unmeasured (recorded $0 on free credits) |
+| Jev for routing, chat model for answers | Jev returns typed decisions with confidence; faster median routing (`docs/jev-routing.md`, Evidence) | New (Sept 2026) service → built a fallback; cost unmeasured (recorded $0 on free credits) |
 | Model fallback when Jev is unsure or down | The demo can't depend on a week-old beta | Slightly more code |
 | Knowledge in the prompt, not retrieval | Small corpus; simpler and more accurate | Won't scale to hundreds of pages as-is |
 | ~~Capture leads on handoff~~ → replaced 09-23 by the demo form below | The bot's job is to free up strategists | Real capture is designed (`db/schema.sql`), not built |
@@ -79,6 +79,12 @@ no autonomous actions.
 | Measure qualified handoffs, not lead count | Research: form completions aren't the outcome (findings §Where) | Harder to measure in a demo |
 | Zero critical eval failures = launch gate | Research §8: never average a critical failure away | Stricter; may cut scope |
 | Links rendered only to an allow-list | OWASP 2026: output rendering is an attack surface (findings #7) | Bot can't link elsewhere |
+
+## 3a. Changed by Brian after device testing (09-24)
+- The privacy banner (09-23) and the "How chat data is used" menu link (09-24) were removed at
+  Brian's request. Trade-off: the research recommends a short privacy note in the chat
+  (findings #8). The `/privacy.html` page still exists and is accurate; in production it would
+  be linked from the site footer or the chat.
 
 ## 4. Phases
 Each phase: build → verify → explain → approve → commit.
@@ -92,177 +98,25 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **6. Measure:** 26 eval cases, runner, 11-model comparison (planned: 3), pick the model
   - **Task (Brian, 09-23): justify the model choice with data.** Run the same eval set
     against every candidate answer model (not just 3 if more are viable) and record
-    quality, invented facts, handoff accuracy, latency, and cost per conversation in §5.
-    Write a short "Why this model" paragraph: why the winner, why not the runners-up.
-    Also explain why Jev for routing (Phase 1 + Phase 4 measurements) vs. using the chat
-    model for routing too. **Done:** `google/gemini-2.5-flash` chosen (§5); Jev benchmark in §6a.
+    quality, invented facts, handoff accuracy, latency, and cost per conversation in §5
+    (now `docs/model-choice.md` §5). Write a short "Why this model" paragraph: why the
+    winner, why not the runners-up. Also explain why Jev for routing (Phase 1 + Phase 4
+    measurements) vs. using the chat model for routing too. **Done:** `google/gemini-2.5-flash`
+    chosen (`docs/model-choice.md` §5); Jev benchmark in `docs/jev-routing.md`.
 - [x] **7. Harden:** rate limits, code review pass (8 fixes), README, browser and load tests
 - [x] **8. Device testing + UI rebuild (09-23/24):** chat window rebuilt on Deep Chat after
-  iPhone testing; iPhone tests in Safari's engine (§6b)
+  iPhone testing; iPhone tests in Safari's engine (§3a)
 - [x] **9. Pre-submission audit (09-24):** skeptical-reviewer audit of code, docs, and the live
   bot; fixes for a chat freeze, card-number redaction, time limits, redaction before model
   calls, a shared firewall rate limit, and `REVIEW-GUIDE.md`
 - [ ] **10. Submit:** swap in Cadre's key (Brian approves), zip with `.git`, upload
 
-## 4a. Phase 1 findings (Jev spike, 2026-09-23)
-Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
-
-| Message | topic (choice) | p | needs_human (boolean) |
-|---|---|---|---|
-| "Do you guys work with construction companies?" | industries | 1.00 | 0.55 |
-| "How much does an engagement cost?" | pricing | 0.99 | 0.35 |
-| "What's the weather in San Diego?" | off_topic | 1.00 | 0.21 |
-
-- **Topic routing is strong.** Use Jev's `choice` for the topic.
-- **A vague "needs a human?" boolean is unreliable** (construction scored above pricing).
-  Decision: handoff = topic rule (planned: pricing, security, portal login; built: pricing and
-  booking, while security and login gaps are handed off by the model plus Jev's check) +
-  a sharper Jev boolean, "is the visitor explicitly asking for a person?", with `criteria`
-  defining true and false. Re-measure in Phase 6.
-- Auth works with the Vercel OIDC token locally; AI Gateway requires a card on file.
-- OpenRouter (Brian's dev key): gemini-2.5-flash-lite and gpt-4.1-nano answered; gpt-5-nano returned blank (reasoning ate the token budget).
-- Live: https://cadre-chatbot-xi.vercel.app. `/api/health` returns ok.
-
-## 4b. Phase 2 findings (knowledge, 2026-09-23)
-- `knowledge/cadre.md`: 77 facts from 21 cadre.ai pages, each with an exact quote and URL.
-- `tools/verify_knowledge.py` string-matches every quote against the live page: 77/77 pass.
-- Research was split: a general-purpose helper, doing the `site-researcher` job, covered the
-  services pages while I covered industries, case studies, and contact in parallel.
-- Deeper research closed gaps the first scan missed: the 8 pillar names (/strategy),
-  real security statements, plus support email, phone, and office address (/contact).
-
-## 5. Model comparison
-
-**Why this model: `google/gemini-2.5-flash` (Brian's decision, 09-23)**
-- **Accuracy first:** 52/52 with no critical or major failures, one of only three perfect
-  models of the 11 tested with identical routing.
-- **Speed decided among the perfect three:** 1.0 s median vs 1.3 s (gpt-4.1-mini) and 2.0 s
-  (claude-haiku-4.5). Speed is what a visitor feels.
-- **Cost is acceptable, not the lowest:** ~$0.91 per 1,000 answers (ESTIMATE from eval runs):
-  about 1.7× gpt-4.1-mini, and about 5× cheaper than claude-haiku-4.5. A $5 key covers
-  roughly 5,000 answers.
-- **Why not the runners-up:** gemini-2.5-flash-lite is faster and 4.5× cheaper but made one
-  major error (a needless handoff); gpt-4.1-mini is a strong, cheaper backup if cost matters
-  more than 0.3 s; llama-4-maverick printed its system prompt 3/3 times.
-- **Limits:** 52 runs on one test set can't prove zero failures (research §8). Rerun the evals
-  whenever the prompt, knowledge, or model changes.
-
-**Full grid, all 11 models with and without Jev:** `evals/results/full-grid.md`. The with-Jev
-arm replays one recorded set of routes, so every model gets the same topic score by
-construction (that recording scored 100%). On answer checks, Jev was better for 7 models, tied
-for 3, worse for 1 (gpt-4o-mini: 4 vs 2 failures). Example: gpt-4.1-nano without Jev invented a
-LinkedIn URL.
-
-**Why Jev for routing** (benchmark, same model, same cases, §6a): topic labels 40/40 vs 34/40,
-median routing 0.38 s vs 0.66 s. Answers about the same (51 vs 50 of 52), p90 routing worse
-(1.3 s vs 0.8 s), Jev's cost unmeasured (recorded $0 on free credits), and the baseline got
-only topic names, not Jev's definitions (`app/router.py:92` vs `:47`). Kept for typed decisions
-with confidence (§3); its rate limits are covered by a proven fallback.
-
-Fair comparison, 2026-09-23 (**corrected** the same day after reviewing every failing reply;
-see "Correction" below): 26 cases, critical cases ×3 (52 runs per model), **identical Jev
-routing for every model** (`evals/results/routes-jev.json`), code-only scoring.
-Failure examples: `evals/results/compare-fixed-failures.md`. Latency excludes routing (+~0.4 s live).
-
-| Model | Passed | Critical | Major | Median | $/answer |
-|---|---|---|---|---|---|
-| **google/gemini-2.5-flash** | **52/52** | 0 | 0 | **1.0 s** | 0.00091 |
-| openai/gpt-4.1-mini | 52/52 | 0 | 0 | 1.3 s | 0.00055 |
-| anthropic/claude-haiku-4.5 | 52/52 | 0 | 0 | 2.0 s | 0.00437 |
-| openai/gpt-oss-120b | 51/52 | 0 | 0 | 5.0 s | 0.00024 |
-| deepseek/deepseek-chat-v3.1 | 51/52 | 0 | 1 | 3.9 s | 0.00061 |
-| google/gemini-2.5-flash-lite | 51/52 | 0 | 1 | 0.8 s | 0.00020 |
-| mistralai/mistral-small-3.2-24b-instruct | 49/52 | 0 | 3 | 2.3 s | 0.00035 |
-| openai/gpt-4o-mini | 48/52 | 0 | 3 | 1.5 s | 0.00038 |
-| qwen/qwen3-235b-a22b-2507 | 46/52 | 0 | 3 | 2.1 s | 0.00019 |
-| openai/gpt-4.1-nano | 48/52 | 0 | 4 | 1.1 s | 0.00017 |
-| meta-llama/llama-4-maverick | 48/52 | **3** | 1 | 1.1 s | 0.00077 |
-| openai/gpt-5-nano, gpt-5-mini | excluded | | | | |
-
-(GPT-5 nano/mini: blank replies on 48–49 of 52 runs; reasoning consumed the 500-token budget.)
-Only real critical failure: llama-4-maverick printed its full system prompt, 3 of 3 times.
-The most common real major failure: showing the strategist form for simple questions
-("Where's the portal?").
-
-**Correction (09-23):** an earlier version of this table claimed "7 of 11 models implied a
-SOC 2 certification." False. Reviewing the actual replies (Brian asked for examples) showed
-they were correct ("Cadre doesn't publish its security certifications publicly"). The checker
-was too strict: exact wording, curly apostrophes, non-breaking hyphens, markdown bold. Fixed
-the checker, scored failures by *what* failed (see evals/README.md), and rescored the saved
-replies with no new calls.
-
-## 5a. Running costs (Brian, 09-23)
-Actual where measured; ESTIMATE / ASSUMED where not.
-
-| Item | What it is | Cost now (demo) | At production scale |
-|---|---|---|---|
-| **Vercel hosting** | Hobby plan: the app, deploys, OIDC auth | **$0** | Hobby is for non-commercial use; a real Cadre deployment would need a paid plan (ASSUMED ~$20 per team member/month, check Vercel pricing) |
-| **Supabase database** | Project `cadre-chatbot` (conversation storage) | **$10/month** (quoted by Supabase when created; Brian deleted another project to offset it) | Same, until storage or traffic outgrows the compute size |
-| **Answer model** | gemini-2.5-flash via OpenRouter | ~**$0.91 per 1,000 answers** (measured in evals) | Scales with traffic: 10,000 answers/month ≈ $9 (ESTIMATE) |
-| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); Jev's own price per call is unmeasured (recorded as $0 on every Jev-routed benchmark turn) | Unknown until billed; a higher rate-limit tier may cost more |
-| **Domain** | Using the free `cadre-chatbot-xi.vercel.app` | $0 | ~$10–20/year for a custom domain (ESTIMATE) |
-| **Build and testing spend** | Dev OpenRouter key: evals, 11-model comparisons, benchmarks | **$2.46 so far** (actual, 09-23) | Each full eval run of one model ≈ $0.02–0.25 depending on model |
-
-**Demo total:** about **$10/month** fixed (Supabase), plus under $1 in model usage for the
-review (ESTIMATE). **Cost per answer, variable:** ~$0.001 (answer model; Jev's cost unmeasured).
-
-## 6. AI-bug log
-Where AI output was wrong or weak, how it was caught, and what changed.
-
-| Date | What the AI produced | What was wrong | How it was caught | Fix |
-|---|---|---|---|---|
-| 09-23 | Advised against Jev: "limited early access, not on OpenRouter" | Jev is generally available on Vercel AI Gateway | Brian found it in one search | Adopted Jev with a fallback; rule: research access paths before objecting |
-| 09-23 | Stated website facts from a summarizer tool as fact | Unverified | Brian asked for the source | Re-read cadre.ai directly; every fact now cites a URL |
-| 09-23 | UI prototype | Unreadable form fields and faint text | Brian reviewed it | Fixed contrast, tested at desktop and phone size before resharing |
-| 09-23 | Jev routing design assumed one "needs a human?" question would work | Scores were fuzzy and inverted (pricing < construction) | Measured it in the Phase 1 spike before building | Topic-rule handoff + a sharper, criteria-defined Jev question |
-| 09-23 | First deploy "succeeded" | Vercel served only static files; the Python app never ran (/api/health 404) | Checked the health endpoint, not just "Ready" | Set `"framework": "fastapi"` in vercel.json; added a .vercelignore so secrets are never uploaded |
-| 09-23 | First site scan said the 8 pillar names and security statements weren't public | They're on /strategy; the scan only read the homepage | Subagent read every services page | Knowledge updated; gaps list corrected |
-| 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
-| 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
-| 09-23 | `/privacy` route returning `FileResponse(public/privacy.html)` | Worked locally, 500 on Vercel: `public/` isn't bundled into the Python function | Post-deploy check of each page; traceback in `vercel logs` | Link to the static `/privacy.html`; gotcha added to CLAUDE.md |
-| 09-23 | The helper subagent, doing the eval-writer job, claimed 3 knowledge quotes didn't match cadre.ai | False: its web tool summarizes pages and loses detail (the helper was general-purpose; eval-writer's own definition has only Read, Grep, Glob) | Re-ran `verify_knowledge.py`: 77/77 still match live HTML | Kept the facts; rule: facts are checked by script, never by an AI's reading |
-| 09-23 | 2 eval cases written too strictly | They failed correct, safe answers (test bugs, not bot bugs) | Read each failing reply before judging | Widened the expected wording; logged as test fixes |
-| 09-23 | Claude's summary of the model comparison: "7 of 11 models implied a SOC 2 certification"; "without Jev the handoff never fired" | Both false. The replies were correct; the checker was too strict (wording, curly quotes, bold) and scored a wrong topic label as critical | Brian asked for real examples of each error; reading them exposed it | Checker normalizes text; severity comes from what failed; saved replies rescored; failure-example reports generated automatically |
-| 09-23 | Code written across Phases 3–5 | 8 issues: a stream that could end silently ("Writing an answer…" forever), client-controlled history size, transcript save delaying the UI, a form promising a follow-up the demo never sends, a whitespace name 500, Start over leaking into the new chat, short phones unredacted, a stale .env.example | Pre-submission review by the general-purpose helper subagent, doing the `code-reviewer` job; each claim checked against the code first (it had been wrong once before) | All 8 fixed with regression tests (50 unit tests); verifying #7 also exposed dates being redacted as phones, now fixed |
-| 09-23 | The chat window: hand-built by Claude (Phases 3–7) | Never put build-vs-use-a-component in front of Brian, though the research weighs buy vs. build vs. hybrid and the brief allows component libraries. The result jumped, overflowed on iPhone, and zoomed on input focus | Brian's own iPhone (screenshots); Claude had tested only Chromium at phone size, never Safari's engine | Replaced with Deep Chat (MIT, self-hosted); WebKit iPhone tests added that fail on any horizontal overflow or sub-16px input |
-| 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
-| 09-24 | Source-link rendering, the redaction rule, and the answer check (Claude, 09-23/24) | The label code threw on a path like `cadre.ai/foo-` and froze the input; 16-digit card numbers passed the phone rule unredacted; the answer check could hide the button while the reply promised a strategist; main.py had grown logic that CLAUDE.md said it doesn't hold | A skeptical pre-submission audit (Claude reviewing its own work, with the live bot and the code) | All fixed with regression tests: 7 JS render tests, card redaction test, offer and timeout tests; logic moved to `app/chat.py` |
-| 09-24 | Redaction moved before the model call (Claude) | The phone rule judged digit count, so "budget 25000-50000" reached the model as "[phone removed]", breaking pricing questions; 26/26 evals passed because no case had numbers | The `/ship` command's code-reviewer subagent, in a headless Claude Code run (`docs/claude-code-runs/`) | Phone *shape* rule plus a regression test for budgets, revenue, and team sizes |
-| 09-25 | Docs and comments written across the build (Claude) | 35 claims had drifted from the code, including a 39 s worst case that was really ~54 s; and the helper's own audit wrongly said the eval link check let any email through | A docs-vs-code audit by the helper subagent, each finding re-checked by hand before changing anything | Hard answer deadline with a test; docs corrected; the wrong finding rejected after testing it |
-| 09-25 | Jev headlines in README, REVIEW-GUIDE, plan.md and docs/jev-routing.md (Claude, 09-23/24) | Written from topic-label scores and a no-Jev baseline without the topic definitions. Also: "4× cheaper" counted Jev as $0, and gpt-oss-120b's "misrouted 88%" was all 52 routes returning `services`, also the fallback's default for a missing or unknown topic | A pre-submission review that recomputed them from the raw result files | Recomputed and rewritten: labels 40/40 vs 34/40, answers 51 vs 50, median faster, p90 slower, cost unmeasured; the unequal baseline is a stated limit |
-| 09-25 | Tooling claims in build-process.md, plan.md, CLAUDE.md, and the `/ship` record (Claude, 09-23/25) | They said the hook blocked commits, the subagents ran as their own types, and `/ship` ran the evals. The session logs show no hook events in 572 Bash calls (the session started in the parent folder), and in the build session one general-purpose helper did every subagent job; only the recorded `/ship` run used a subagent definition (code-reviewer) | A pre-submission review of the session logs | Corrected, and marked in build-process.md; REVIEW-GUIDE says how the tooling ran; the hook now catches `git -C . commit`, fails closed, and has tests |
-| 09-25 | The canned off-topic reply, the identity eval, and its grading (Claude, 09-23) | The reply never said it was an AI and promised "connect you with a strategist" with no button. The eval asked "Am I talking to a real person right now?", which Jev scored 0.69-0.87 in every saved Jev-routed run, under the 0.9 canned threshold, so it never reached that reply; a missing disclosure graded major | A live probe in the pre-submission review: "Are you a human?" was routed off_topic at 0.93 and got the canned reply | The reply opens "I'm Cadence, Cadre's AI assistant" and offers no strategist; 4 unit tests; 2 short identity evals; a missing disclosure on an identity case now grades critical |
-| 09-25 | The booking eval (Claude, 09-23) and the form hint in `app/chat.py` (Claude, 09-24) | The eval passed any reply naming hello@gocadre.ai or cadre.ai/contact, so "the contact form on Cadre's website at cadre.ai/contact" passed in `content-audit.json` and `input-cleaning.json` while the route called for the form below it. The hint, and the prompt's handoff rule (`prompts/system.md:50`), asked for cadre.ai/contact | Two live probes in the pre-submission review got that reply | The hint names the chat form and rules out cadre.ai/contact; 3 booking cases now need "form below" and fail on cadre.ai/contact |
-
-## 6a. Documentation tasks (for the review)
-- **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the
-  10 topic definitions (`config.TOPICS`) and how Jev picks one, the "asks for a person"
-  question and its true/false criteria, the confidence threshold and why it's 0.6, the
-  model fallback path, how the topic feeds the answer prompt, the off-topic short-circuit,
-  auth via Vercel OIDC, and the Phase 1 / Phase 4 measurements. Target:
-  `docs/jev-routing.md` plus a diagram. **Done:** `docs/jev-routing.md`.
-
-- **DONE 09-23 (corrected 09-23, 09-25). Benchmark with vs. without Jev.** gemini-2.5-flash,
-  26 cases × critical ×3: **with Jev 51/52, topic labels 40/40, handoff 97%, routing median
-  0.38 s (p90 1.3 s)**; without Jev 44/52, labels 34/40, handoff 94%, median 0.66 s (p90
-  0.8 s). Routing cost: $0.000072/route without Jev; with Jev only the 13 fallback calls
-  were billed (Jev recorded $0 on free credits). **Neither had a critical failure**; 6 of
-  the 8 misses without Jev were wrong labels on otherwise passing replies (e.g. SOC 2 filed
-  as `company`), so answer checks were 51 vs 50. An earlier "handoff never fired" claim was
-  wrong: the model's own tag still showed it. Jev returned HTTP 429 on 11/52 calls; the
-  fallback covered them. Files: `evals/results/bench-*.json`, `bench-failures.md`.
-- *(original task)* **Benchmark with vs. without Jev (Brian, 09-23):** run the same eval set two ways,
-  (a) Jev routing + rules and (b) chat-model-only routing (the fallback path, forced on),
-  and compare topic accuracy, handoff accuracy, latency (median and slow tail), cost per
-  conversation, and off-topic/injection handling. It answers "was Jev worth adding?" with
-  data. Easy to run: `route()` already has both paths; add a flag to force the fallback.
-  Do it in Phase 6 alongside the model comparison. **Done** (see the entry above).
-
-## 6b. Changed by Brian after device testing (09-24)
-- The privacy banner (09-23) and the "How chat data is used" menu link (09-24) were removed at
-  Brian's request. Trade-off: the research recommends a short privacy note in the chat
-  (findings #8). The `/privacy.html` page still exists and is accurate; in production it would
-  be linked from the site footer or the chat.
+## Moved out (09-25)
+- Old §4a, §4b, §5, §5a (Jev spike, knowledge, model comparison, running costs):
+  `docs/model-choice.md`, same numbers.
+- Old §6 (AI-bug log): `docs/ai-bug-log.md`.
+- Old §6a (documentation tasks, all done): deleted; the Jev benchmark is in `docs/jev-routing.md`.
+- Old §6b is now §3a.
 
 ## 7. What's next (with more time)
 - **Jev usage tier (Brian, 09-23):** Jev returned HTTP 429 (rate limited) on ~20% of calls in

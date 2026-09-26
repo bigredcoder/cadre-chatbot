@@ -77,11 +77,17 @@ Jev ──► topic + probability, asks_for_human probability
 |---|---|---|
 | Topic labels correct (40 runs have an expected topic) | 40/40 | 34/40 |
 | Answer checks passed (every check except the topic label) | 51/52 | 50/52 |
+| Handoff decisions correct (36 runs whose case says hand off or not: 23 yes, 13 no) | 35/36 | 34/36 |
+| Off-topic and injection runs passed | 7/7 | 7/7 |
+| Critical failures | 0 | 0 |
 | Routing time, median / p90 | 0.38 s / 1.3 s | 0.66 s / 0.8 s |
 | Routing cost | Jev: unmeasured (recorded $0 on all 39 Jev-routed turns, on free credits); 13 fallback calls: $0.00089 | $0.0038 (52 calls) |
 | Cost per turn (answer + routing) | $0.000997 | $0.000836 |
 
 - 6 of the 8 misses without Jev are wrong labels on replies that passed every other check.
+  Every miss, with its real reply: `evals/results/bench-failures.md`.
+- Handoff misses: both arms offered a person needlessly on `portal-where-is-it`; without Jev
+  it also missed the handoff on `gap-maturity-index-free`.
 - The p90 is worse with Jev because 13 of 52 turns fell back to the chat model after trying
   Jev (11 on HTTP 429, 2 unsure).
 - Cost per turn is higher with Jev because of the answer model's bill, not routing. The same
@@ -94,7 +100,8 @@ Jev ──► topic + probability, asks_for_human probability
   (gpt-4o-mini: 4 vs 2 failures).
 
 How it was measured, including two invalid runs and why they were thrown out:
-`build-process.md`, Phase 6 (its Jev figures are superseded by the last entry, 09-25).
+`build-process.md`, Phase 6 (its Jev figures are superseded by the 09-25 entry "Jev claims
+match the data; route replay fixed", commit `33eb401`).
 
 ## Limits and next steps
 - Not an equal test: the fallback classifier gets only the topic names (`app/router.py:92`);

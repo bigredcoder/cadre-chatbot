@@ -24,7 +24,7 @@ _load_dotenv()
 
 # --- Answer model (OpenRouter) ---
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-# Chosen 2026-09-23 from an 11-model eval comparison (plan.md §5, "Why this model"):
+# Chosen 2026-09-23 from an 11-model eval comparison (docs/model-choice.md §5, "Why this model"):
 # 52/52 with identical recorded routing, zero critical or major failures, and the fastest of
 # the three perfect models.
 ANSWER_MODEL = os.environ.get("ANSWER_MODEL", "google/gemini-2.5-flash")

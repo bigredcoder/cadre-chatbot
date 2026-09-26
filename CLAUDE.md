@@ -1,7 +1,9 @@
 # CLAUDE.md: Cadence (Cadre AI support chatbot)
 
-Read `plan.md` before starting any task. It holds scope, phases, and decisions.
-This file tells you how to work in this repo. If the two ever disagree, stop and ask.
+`plan.md` holds scope, phases, and decisions: read it before starting a phase. Open
+`docs/ai-bug-log.md` only to add an entry, `docs/model-choice.md` only for model or cost
+questions, and `docs/jev-routing.md` for routing. This file tells you how to work in this
+repo. If it and `plan.md` ever disagree, stop and ask.
 
 ## What this is
 Cadence is a customer-support chatbot for Cadre AI's website. It answers common
@@ -36,11 +38,13 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - `evals/cases.yaml`: **Brian owns the final list.** `evals/run.py` runs them.
 - `tests/`: unit tests. No network calls, ever. Mock OpenRouter, Jev, and Supabase.
 
-## Research (read before UX, prompt, handoff, or eval work)
-- `docs/research/findings.md`: what the 2026 chatbot research means for Cadence, as a
-  numbered list of changes (#1–#17) with evidence strength. Cite the # when implementing one.
-- `docs/research/website-ai-chatbot-research-2026.md`: the full report. `§` refs point here.
-- Don't contradict a finding without logging why in plan.md → Key decisions.
+## Research
+- `docs/research/findings.md`: read before UX, prompt, handoff, or eval work. What the 2026
+  chatbot research means for Cadence, as a numbered list of changes (#1–#17) with evidence
+  strength. Cite the # when implementing one.
+- `docs/research/website-ai-chatbot-research-2026.md`: the full report (~66 KB). Open it only
+  to look up a § that a finding cites. Bare `§` refs in findings.md point here.
+- Don't contradict a finding without logging why in plan.md §3 (Key decisions).
 
 ## Hard rules
 1. **No fact without a source.** Every line in `knowledge/` cites a cadre.ai URL or
@@ -54,7 +58,7 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
    swap. All development uses Brian's own key.
 6. **Transcripts are stored only redacted** (emails, phone and card numbers removed before
    saving), deleted after 30 days, and described on `/privacy.html` (not linked from the
-   widget: Brian's call, plan.md §6b). Handoff form submissions are never stored (demo).
+   widget: Brian's call, plan.md §3a). Handoff form submissions are never stored (demo).
 7. **Empty model replies are errors.** Some reasoning models return blank text when
    they run out of tokens (seen 2026-09-23 with gpt-5-nano). Never show a blank bubble.
 8. Every behavior change ships with a unit test or an eval case.
@@ -66,13 +70,15 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
   `.claude/hooks/` enforces this only when Claude Code is started in this folder; otherwise
   run them by hand.
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
-- When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
+- When Brian rejects or corrects your output, log it in `docs/ai-bug-log.md`.
 - **Never report an eval failure without its real example** (question, actual reply, what
   the check caught). Read failing replies before claiming a model failed: checks can be wrong.
   `python -m evals.report <label>` writes them.
 - **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
   append or update an entry: did / found / decided / checked / commit hash. Facts only,
   no marketing. It's the record of how the app was built, so never let it fall behind.
+  It's large (over 60 KB): read only its last ~40 lines for the format (or grep for the line
+  you're updating), never the whole file.
 
 ## Tools in this repo (`.claude/`)
 Start Claude Code in this folder so the commit gate (`.claude/hooks/pre_commit_gate.py`) loads.

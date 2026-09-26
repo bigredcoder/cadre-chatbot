@@ -896,3 +896,35 @@ and never judged it as a visitor would.
   (`evals/results/full-set-09-25.json`, $0.05214): 31/31 cases, 63/63 runs, topic and handoff
   accuracy 1.0. Jev routed 50 runs; the fallback routed 13 (Jev HTTP 429 or 503 on 9, under 0.6
   on 4). ruff clean, mypy clean, 117 unit tests pass.
+
+**09-25 · plan.md split: plan only; results and the bug log moved to docs/** · commit `pending-split`
+- **Found (Brian, reading plan.md):** CLAUDE.md told every session to read plan.md before any
+  task, and plan.md had grown to 28,090 bytes (about 7k tokens, ESTIMATE at ~4 characters a
+  token). 63% of it was results and logs, not plan: old §4a–§5a (Jev spike, knowledge, model
+  comparison, costs) 7,132 bytes, §6 AI-bug log 8,779, §6a documentation tasks 1,898. Review of
+  this change found two bigger reads CLAUDE.md still invited: this file (60,853 bytes before this
+  entry) after every step, and the full research report (65,906 bytes) before most work.
+- **Changed:** plan.md keeps §1, §2, §2a, §3, §4 and §7; old §6b (changed after device testing)
+  is now §3a, next to the decisions. Old §4a, §4b, §5 and §5a moved word for word to
+  `docs/model-choice.md` and keep their numbers, which the entries above cite. Old §6 moved to
+  `docs/ai-bug-log.md`, with a new entry for this. Old §6a deleted: both tasks were done, and its
+  benchmark numbers were already in `docs/jev-routing.md` or superseded there, except three now
+  added to its Evidence table from `evals/results/bench-*-jev.json`: handoff decisions 35/36 with
+  Jev vs 34/36 without, off-topic and injection runs 7/7 each, critical failures 0 each. A
+  "Moved out" list in plan.md maps the old numbers. CLAUDE.md now says: read plan.md before
+  starting a phase; open `docs/ai-bug-log.md` only to add an entry, `docs/model-choice.md` only
+  for model or cost questions, `docs/jev-routing.md` for routing; open the full research report
+  only to look up a § a finding cites; read only the last ~40 lines of this file to append (the
+  `/ship` command says the same). Pointers fixed in plan.md (§5, §6a, §6b), in the moved text
+  (§6a, §3), and in CLAUDE.md, README, REVIEW-GUIDE, `docs/jev-routing.md`,
+  `docs/research/findings.md`, and comments in `app/config.py` and `evals/compare.py`. Entries
+  above keep the old section numbers; they aren't rewritten.
+- **Checked:** sizes (`wc -c`): plan.md 28,090 → 10,703 bytes; CLAUDE.md 7,197 → 7,565;
+  CLAUDE.md plus plan.md 35,287 → 18,268 (about 8.8k → 4.6k tokens, ESTIMATE); new
+  `docs/model-choice.md` 7,328, `docs/ai-bug-log.md` 9,275. A scratch script compared all 158
+  headings, paragraphs, list items and table rows of the old plan.md (whitespace normalized,
+  pointer fixes applied) with the new files: all present except the 4 of old §6a. Its reverse
+  check found 9 new units: the "Moved out" list (5), the model-choice title, the two intros, and
+  the new log entry. ruff clean, mypy clean, 117 unit tests pass. No code behavior changed. (With
+  `SAVE_TURNS=0` set in the shell, 2 tests in `tests/test_transcripts.py` fail, at HEAD too: they
+  don't set it themselves.)
