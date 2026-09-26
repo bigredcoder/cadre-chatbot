@@ -58,7 +58,7 @@
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 117 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
+- 118 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
   WebKit), and 31 answer-quality evals scored by code.
 - Model choice: why gemini-2.5-flash in `docs/model-choice.md` §5; all 11 models on the same
   cases, with and without Jev, in `evals/results/full-grid.md`.

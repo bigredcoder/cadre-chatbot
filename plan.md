@@ -40,7 +40,7 @@ It doesn't guess.
    reply, topic, confidence, router, model, latency, tokens, cost, outcome). Emails, phone
    and card numbers are redacted before the models see them and before saving; rows are
    deleted after 30 days; described on `/privacy.html`.
-7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 117 unit tests,
+7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 118 unit tests,
    31 eval cases, 12 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
@@ -109,7 +109,8 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **9. Pre-submission audit (09-24):** skeptical-reviewer audit of code, docs, and the live
   bot; fixes for a chat freeze, card-number redaction, time limits, redaction before model
   calls, a shared firewall rate limit, and `REVIEW-GUIDE.md`
-- [ ] **10. Submit:** swap in Cadre's key (Brian approves), zip with `.git`, upload
+- [ ] **10. Submit:** swap in Cadre's key (Brian approves), package with `tools/package.sh`
+  (a fresh clone, zipped with `.git`), upload
 
 ## Moved out (09-25)
 - Old §4a, §4b, §5, §5a (Jev spike, knowledge, model comparison, running costs):

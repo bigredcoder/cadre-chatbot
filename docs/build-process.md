@@ -996,3 +996,23 @@ and never judged it as a visitor would.
   History not rewritten.
 - **Checked:** the summary's hashes with `git show`; `git show -M --stat` on this commit shows
   the move as a rename. ruff clean, mypy clean, 117 unit tests pass.
+
+### 09-26 · Submission zip built from a fresh clone and checked · commit "Add a packaging script that zips a clean clone and checks for secrets"
+- **Found (pre-submission review):** the only packaging step was plan.md's "zip with `.git`,
+  upload". The working folder (318 MB) holds `.env`, `.env.local`, `.vercel/` and a 301 MB
+  `.venv/`. A plain `git clone` of it also copies 22 objects no branch reaches (old stashes),
+  and its remote is this machine's folder path.
+- **Changed:** new `tools/package.sh`. It clones HEAD's branch (`--no-local --single-branch`),
+  drops the remote and the clone's reflog, and zips it with `.git`. It lists the zip and fails
+  on `.env` or `.env.*` (except `.env.example`), `.vercel/`, `.venv/`, `node_modules/`,
+  `__pycache__/`, `.DS_Store`, `dist/` or `build/`. Only a clean zip is written, by default to
+  `../cadre-chatbot-submission.zip` (never inside the repo). It refuses uncommitted changes
+  unless `--allow-dirty`. It uses the first git on PATH that runs: on this Mac the first is an
+  old Intel-only build that bash can't start. New test `tests/test_package.py`. README has one
+  line on it; plan.md Phase 10 says to use it. Unit-test count 117 → 118 in README,
+  REVIEW-GUIDE and plan.md.
+- **Checked:** run on `118be99`: 1.2 MB, 178 entries. Unzipped: `git fsck --full` clean, 58
+  commits, the same 122 files as HEAD, no local path in `.git`. In a scratch repo it failed
+  (exit 1, no zip written) on a tracked `.env.local`, `sub/.env`, `.vercel/project.json`, a
+  `.vercel` symlink, `build/out.txt`, `__pycache__/m.pyc` and `.DS_Store`, and refused staged
+  changes without `--allow-dirty`. ruff clean, mypy clean, 118 unit tests pass.
