@@ -770,3 +770,12 @@ and never judged it as a visitor would.
   cleaner switched off, Gemini also ignored the hidden text. The cleaner is defense in depth for
   other models, and it keeps null bytes (which Postgres rejects in text) out of the database.
 - **Checked:** ruff, mypy, 76 unit tests, evals 28/28 on the full set plus the new case 3/3.
+
+**09-25 · Review guide states working time** · commit `pending-time`
+- **Found (outside audit):** the review guide gave only commit times, so the 09-23 → 09-25
+  span read as 52 hours of work, and it called the 15:23 version "hardened" when later
+  audits still fixed privacy and error-handling gaps in it.
+- **Changed:** REVIEW-GUIDE.md now states about 7 hours of active work over three days
+  (session logs, breaks left out: 6.1-7.9 h depending on how idle gaps are counted),
+  calls `3b251ad` "eval-tested" instead of "hardened", and labels later work as optional.
+- **Checked:** docs only; no code changed.

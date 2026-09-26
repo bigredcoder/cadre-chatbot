@@ -33,10 +33,14 @@
 - Data: one table (`db/schema.sql`), insert-only key, redacted, deleted after 30 days.
 
 **Speed and scope**
+- **Time:** about 7 hours of active work, spread over three days (09-23 to 09-25), measured
+  from the Claude Code session logs with breaks left out. The commits span 52 hours of
+  calendar time, not working time.
 - The first streaming answers worked 36 minutes after the first commit (git log, 09-23
-  12:06 → 12:42), and the eval-tested, hardened version was done by 15:23.
-  Later time went to real-iPhone testing, a UI rebuild on a proven component, and a
-  pre-submission audit.
+  12:06 → 12:42). The eval-tested version covering the brief was done by 15:23 the same day
+  (`3b251ad`, about 3 hours after the first commit).
+- Everything after that was extra work I chose to do: real-iPhone testing, a UI rebuild on a
+  proven component, and a pre-submission audit.
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
