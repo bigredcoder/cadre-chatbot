@@ -49,7 +49,7 @@ the other cases too.
 - `compare-nojev.md`, `compare-nojev-<model>.json`, `compare-nojev-failures.md`: each model
   routes itself.
 - `invalid-parallel-run/`: the first comparison, thrown out because Jev rate limits under
-  parallel load contaminated the routing. Kept as evidence (see build-process.md, Phase 6).
+  parallel load contaminated the routing. Kept as evidence (see docs/build-process.md, Phase 6).
 
 **Jev benchmark (09-23), same model with and without Jev:** `bench-with-jev.json`,
 `bench-without-jev.json`, `bench-failures.md`.

@@ -74,8 +74,9 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - **Never report an eval failure without its real example** (question, actual reply, what
   the check caught). Read failing replies before claiming a model failed: checks can be wrong.
   `python -m evals.report <label>` writes them.
-- **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
-  append or update an entry: did / found / decided / checked / commit hash. Facts only,
+- **Keep `docs/build-process.md` current.** After every meaningful step (not just phase ends),
+  append or update an entry: did / found / decided / checked, naming its commit by subject.
+  A later real commit may add the hash; never make a commit only to log a hash. Facts only,
   no marketing. It's the record of how the app was built, so never let it fall behind.
   It's large (over 60 KB): read only its last ~40 lines for the format (or grep for the line
   you're updating), never the whole file.

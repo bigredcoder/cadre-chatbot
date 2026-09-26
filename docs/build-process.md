@@ -5,6 +5,22 @@ and how we checked it. Newest entries at the bottom. Updated after every meaning
 
 `plan.md` says what we're building and why. This file says what actually happened.
 
+Claude Code wrote this log during the build. "I" and "my" mean Claude; the one exception is
+"with me directing" in the Planning entry, which is Brian.
+
+## Summary
+- **09-23 12:06 · `73b0d90`:** first commit: `CLAUDE.md`, `plan.md`, `.gitignore` and
+  `.env.example`, before any code.
+- **09-23 12:15 · `59f3557`:** FastAPI skeleton deployed to Vercel, plus the Jev spike.
+  Streaming answers in the chat widget at 12:42 (`3104a37`).
+- **09-23 15:23 · `3b251ad`:** phases 0–7 done: the eval-tested version that covers the brief.
+- **09-23 18:45 · `0b61759`:** chat window rebuilt on Deep Chat after Brian's iPhone review.
+- **09-24 · `88313fb` to `6e7bbd7`:** Brian's UI feedback, and a pre-submission audit with its
+  fixes.
+- **09-25 and 09-26 · from `4270f8f`:** more audits (docs vs code, file by file, the session
+  logs) and their fixes. From Brian's questions and tests: the invisible-character filter
+  (`1af30e9`), the plan.md split (`393c7df`) and the phone page lock (`fba07c9`).
+
 ---
 
 ## 2026-09-23 · Planning (before any code)
@@ -551,7 +567,7 @@ and never judged it as a visitor would.
 - Side-by-side screenshots against Chatbase: `../compare-desktop.png`, `../compare-iphone.png`.
 - Browser tests updated for the menu; 8/8, twice.
 
-**Brian's iPhone round 2 (09-23): three fixes · commit `78c8ad9`**
+### Brian's iPhone round 2 (09-23): three fixes · commit `78c8ad9`
 - **The keyboard covered the form.** The form (and the chat on open) moved focus into a field
   by itself, which pops the iOS keyboard, and Safari doesn't shrink the page for the keyboard.
   → On touch devices nothing auto-focuses; the phone panel is sized to `visualViewport`
@@ -564,14 +580,18 @@ and never judged it as a visitor would.
   circle center, and circle center = input center, in the empty, ready, and answering states.
 - Browser suite: 9/9 (3 iPhone tests).
 
-**09-24 · Privacy link removed from the menu (Brian's call)** · commit `88313fb`
+---
+
+## 2026-09-24
+
+### 09-24 · Privacy link removed from the menu (Brian's call) · commit `88313fb`
 - The "How chat data is used" menu item is gone; `/privacy.html` still exists and stays
   accurate. The trade-off against the research's privacy-note guidance is logged in `plan.md` §6b.
 - **"Start a new chat" is now a visible "+ New chat" button** in the header (Brian: "should be
   a button, not a dropdown"). The ••• menu keeps Talk to a strategist and Behind the scenes.
   Header checked at iPhone and desktop widths, no overflow; browser tests 9/9.
 
-**09-24 · Needless strategist offers and source formatting (Brian's feedback)** · commit `b907b01`
+### 09-24 · Needless strategist offers and source formatting (Brian's feedback) · commit `b907b01`
 - **Found:** 8 of 26 eval answers ended with "Would you like to talk to an AI strategist?"
   after fully answering. Cause: the prompt's "one next step" rule plus an example that ended
   that way. Separately, the model's own handoff tag sometimes fired after a complete answer
@@ -588,7 +608,7 @@ and never judged it as a visitor would.
   on 7 real replies: 6/7 right; it scored "Which AI models do you use?" 0.44 (Cadre doesn't
   name models, so arguably right). Unit 53/53 (3 new), browser 9/9 incl. a new source-link check.
 
-**09-24 · Fixes from a skeptical pre-submission audit, plus header icons** · commit `fc12e50`
+### 09-24 · Fixes from a skeptical pre-submission audit, plus header icons · commit `fc12e50`
 - **Did:** audited the repo: git history and secrets, docs vs code, the live bot (21 real
   questions including injection and personal data), and code quality.
 - **Fixed:**
@@ -608,7 +628,7 @@ and never judged it as a visitor would.
   (talk to a strategist), with hover tooltips and screen-reader names.
 - **Checked:** unit 58/58, browser 9/9 (local), evals 26/26 with topic and handoff accuracy 100%.
 
-**09-24 · Provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit `899d1b4`
+### 09-24 · Provider privacy, shared rate limit, reviewer guide, a real /ship run · commit `899d1b4`
 - **Personal details never reach the model providers:** emails, phones, and card numbers are now
   redacted before routing and answering, not just before saving (`app/chat.py`).
 - **Shared rate limit:** Vercel firewall rule, 20 POSTs/min per IP on `/api/`, across all
@@ -624,7 +644,7 @@ and never judged it as a visitor would.
   digits, or 10+ bare digits) instead of digit count, with a regression test.
 - **Checked:** ruff, mypy, 61 unit tests, 10 browser tests (local), evals 26/26.
 
-**09-24 · Hover labels and answers that match the screen (Brian's feedback)** · commit `212d923`
+### 09-24 · Hover labels and answers that match the screen (Brian's feedback) · commit `212d923`
 - **Hover labels:** the header icon buttons (New chat, Talk to a strategist, More options,
   Close) show a label instantly on hover or keyboard focus. The browser's own tooltip took
   about a second and was easy to miss. Phones use the screen-reader names.
@@ -639,12 +659,16 @@ and never judged it as a visitor would.
   fails this quote, on cadre.ai/contact.)
 - **Checked:** 62 unit, 10 browser (local), evals 26/26, topic and handoff accuracy 100%.
 
-**09-24 · Landing page: removed the "not the official Cadre site" line (Brian's call)** · commit `6e7bbd7`
+### 09-24 · Landing page: removed the "not the official Cadre site" line (Brian's call) · commit `6e7bbd7`
 - The header now shows only the wordmark. The page still says "Support assistant demo", the
   handoff form says "Demo: nothing is sent", and `/privacy.html` says it's a take-home demo.
 - Checked: desktop and iPhone screenshots, browser tests 10/10 (local).
 
-**09-25 · Docs-vs-code audit, a hard answer deadline, and a no-echo safety rule** · commit `192241a`
+---
+
+## 2026-09-25
+
+### 09-25 · Docs-vs-code audit, a hard answer deadline, and a no-echo safety rule · commit `192241a`
 - **Did:** audited every document and code comment against the code (the helper subagent
   checked the other files while `plan.md` was fixed by hand; corrected 09-25: Claude made that
   edit, at Brian's request). 35 findings; each was checked before changing anything.
@@ -665,7 +689,7 @@ and never judged it as a visitor would.
   401). Every message fell back to the chat model and was still answered safely.
 - **Checked:** ruff, mypy, 63 unit, 10 browser (local), evals 26/26, topic and handoff 100%.
 
-**09-25 · File-by-file audit: `app/chat.py`** · commit `c95ae95`
+### 09-25 · File-by-file audit: `app/chat.py` · commit `c95ae95`
 - **Found:** an unexpected error in the optional Jev "did it answer?" check reached the outer
   error handler, so a finished answer could be replaced by "Sorry, I couldn't answer that".
   **Fixed:** any failure there counts as "check unavailable" and keeps the offer; test added.
@@ -675,7 +699,7 @@ and never judged it as a visitor would.
   built never to raise (every failure falls back), so this is practically unreachable.
 - **Checked:** ruff, mypy, 65 unit tests, evals 26/26 (topic and handoff 100%).
 
-**09-25 · File-by-file audit: `app/router.py`** · commit `12921dd`
+### 09-25 · File-by-file audit: `app/router.py` · commit `12921dd`
 - **Found:** `route()` promised "never raises", but both the Jev step and the fallback caught
   only the errors we expected. A malformed Jev answer (AttributeError) or an empty model reply
   (IndexError) escaped, and a good question got the error message. **Fixed:** any surprise
@@ -686,7 +710,7 @@ and never judged it as a visitor would.
   The visitor still gets an answer.
 - **Checked:** ruff, mypy, 66 unit tests.
 
-**09-25 · File-by-file audit: `app/answer.py`** · commit `4accbb1`
+### 09-25 · File-by-file audit: `app/answer.py` · commit `4accbb1`
 - **Found:** only the exact `[HANDOFF]` tag was recognized. `[Handoff]` or `[ HANDOFF ]` would
   have shown on screen and lost the offer. **Fixed:** any capitalization and spacing, including
   while it streams in; ordinary brackets still show. Tests added.
@@ -697,7 +721,7 @@ and never judged it as a visitor would.
   flag. Answers are 2–4 sentences by design, and no eval case comes close.
 - **Checked:** ruff, mypy, 72 unit tests, evals 26/26 (topic and handoff 100%).
 
-**09-25 · File-by-file audit: `app/transcripts.py`** · commit `ce62c24`
+### 09-25 · File-by-file audit: `app/transcripts.py` · commit `ce62c24`
 - **Found:** `save_turn` promised "never raises" but caught only network errors. Any other
   failure escaped after the answer was already sent, and the widget could then show the error
   text instead of the answer. **Fixed:** every failure is logged and swallowed. Test added.
@@ -708,13 +732,13 @@ and never judged it as a visitor would.
   fallback if the stream errors after `done`.
 - **Checked:** ruff, mypy, 73 unit tests.
 
-**09-25 · File-by-file audit: `app/guards.py`** · commit `7162b70`
+### 09-25 · File-by-file audit: `app/guards.py` · commit `7162b70`
 - **No bugs.** Checked against Vercel's docs that `x-forwarded-for` is overwritten by Vercel,
   so a visitor can't fake an IP to dodge the limit; noted it in the code. Rejected requests
   don't count against the visitor (standard). Noted that the strategist form shares the chat
   budget. Comment-only changes.
 
-**09-25 · File-by-file audit: `app/config.py`** · commit `7162b70`
+### 09-25 · File-by-file audit: `app/config.py` · commit `7162b70`
 - **Found:** three settings nothing used: `HANDOFF_TAG` (superseded by the any-spelling match in
   `answer.py`), `RETENTION_DAYS` (the database enforces 30 days itself), and
   `ALLOWED_LINK_HOSTS` (the real allow-list is in `public/render.js`). **Removed**, with a
@@ -724,7 +748,7 @@ and never judged it as a visitor would.
   to 3 s.
 - **Checked:** ruff, mypy, 73 unit tests.
 
-**09-25 · File-by-file audit: `public/` (chat window)** · commit `78fc549`
+### 09-25 · File-by-file audit: `public/` (chat window) · commit `78fc549`
 - **Found:** a connection hiccup *after* the answer finished (`done` received) replaced the
   finished answer with "Sorry, I couldn't answer that just now." **Fixed:** once `done`
   arrives, later stream errors are ignored.
@@ -736,7 +760,7 @@ and never judged it as a visitor would.
   what's stored.
 - **Checked:** 12 browser tests (local), 73 unit tests.
 
-**09-25 · Content audit: `knowledge/` and `prompts/`** · commit `e95b80b`
+### 09-25 · Content audit: `knowledge/` and `prompts/` · commit `e95b80b`
 - **Facts re-checked:** `tools/verify_knowledge.py` → 77/77 quotes still match cadre.ai today.
 - **Gap found:** the brief lists Cadre's key partners (OpenAI, Anthropic, Google, Microsoft,
   AWS, Salesforce, Snowflake, OpenRouter); the fact file had only OpenAI and Anthropic, so "Do
@@ -751,7 +775,7 @@ and never judged it as a visitor would.
   (corrected 09-25: the booking reply no longer pointed to the form below; the old check
   passed it.)
 
-**09-25 · Audit: `.claude/` and `evals/`** · commit `b7cc5e0`
+### 09-25 · Audit: `.claude/` and `evals/` · commit `b7cc5e0`
 - **Commit gate proven both ways:** with a planted lint error the hook blocked the commit (exit
   2 with the ruff output); a clean tree passed; non-commit commands pass through. (corrected
   09-25: per the session logs, a payload piped into the script by hand; the hook never
@@ -768,7 +792,7 @@ and never judged it as a visitor would.
   has INSERT only; one policy (insert); the nightly 30-day deletion job is scheduled (03:17);
   172 rows, with zero emails, phone numbers, or card numbers left in visitor messages.
 
-**09-25 · Invisible and control characters stripped from visitor messages** · commit `1af30e9`
+### 09-25 · Invisible and control characters stripped from visitor messages · commit `1af30e9`
 - **Asked (Brian):** is there a check for illegal characters and injection? The existing layers
   held (prompt rules, canned off-topic, escaped rendering, link allow-list, no SQL, strict
   request format, rate limits, and a bot with no tools). **Gap:** invisible characters
@@ -785,7 +809,7 @@ and never judged it as a visitor would.
   (corrected 09-25: the 28/28 includes the same booking reply, and that 3/3 has no results file.
   The case passed 3/3 in `full-set-09-25.json`.)
 
-**09-25 · Review guide states working time** · commit `dd07a6e`
+### 09-25 · Review guide states working time · commit `dd07a6e`
 - **Found (outside audit):** the review guide gave only commit times, so the 09-23 → 09-25
   span read as 52 hours of work, and it called the 15:23 version "hardened" when later
   audits still fixed privacy and error-handling gaps in it.
@@ -794,7 +818,7 @@ and never judged it as a visitor would.
   calls `3b251ad` "eval-tested" instead of "hardened", and labels later work as optional.
 - **Checked:** docs only; no code changed.
 
-**09-25 · Jev claims match the data; route replay fixed** · commit `33eb401`
+### 09-25 · Jev claims match the data; route replay fixed · commit `33eb401`
 - **Found (pre-submission review):** the Jev headlines said more than the result files. Without
   Jev, 6 of the 8 misses were wrong topic labels on replies that passed every other check, and
   the model classifier got only topic names (`app/router.py:92`) while Jev got definitions
@@ -816,7 +840,7 @@ and never judged it as a visitor would.
   of answer time, so no live Jev call ran. The new test fails on the old `evals/run.py` and
   passes on the fix. ruff clean, mypy clean, 77 unit tests pass.
 
-**09-25 · Tooling claims match the session logs; commit gate fails closed** · commit `98ccd7c`
+### 09-25 · Tooling claims match the session logs; commit gate fails closed · commit `98ccd7c`
 - **Found (pre-submission review, from the session logs):** the build session was started in the
   parent folder, where this repo's hook doesn't load. No hook events in 572 Bash calls, so the hook
   never blocked a real commit. 8 subagent spawns in the build session, all general-purpose; Brian's
@@ -840,7 +864,7 @@ and never judged it as a visitor would.
   payload piped in by hand is blocked (exit 2, with the ruff error). ruff clean, mypy clean, 112
   unit tests pass.
 
-**09-25 · Canned off-topic reply says it's an AI; identity evals added** · commit `151e99a`
+### 09-25 · Canned off-topic reply says it's an AI; identity evals added · commit `151e99a`
 - **Found (pre-submission review, live probe on the deployed site):** Jev routed "Are you a
   human?" to off_topic at 0.93, over the 0.9 canned threshold (`app/config.py:61`), so
   `app/chat.py` skipped the model and sent `OFF_TOPIC_REPLY`. It never said it was an AI
@@ -867,7 +891,7 @@ and never judged it as a visitor would.
   model); the real-person case went to the model 3/3 (0.70-0.74). ruff clean, mypy clean, 116
   unit tests pass.
 
-**09-25 · Booking answer points to the form on screen; booking evals tightened** · commit `e43f076`
+### 09-25 · Booking answer points to the form on screen; booking evals tightened · commit `e43f076`
 - **Found (pre-submission review, live probes):** "How do I book a call with an AI strategist?"
   got "…filling out the contact form on Cadre's website at cadre.ai/contact, or by emailing
   hello@gocadre.ai." twice, with the form right below it. First seen in `content-audit.json`
@@ -897,7 +921,7 @@ and never judged it as a visitor would.
   accuracy 1.0. Jev routed 50 runs; the fallback routed 13 (Jev HTTP 429 or 503 on 9, under 0.6
   on 4). ruff clean, mypy clean, 117 unit tests pass.
 
-**09-25 · plan.md split: plan only; results and the bug log moved to docs/** · commit `pending-split`
+### 09-25 · plan.md split: plan only; results and the bug log moved to docs/ · commit `393c7df`
 - **Found (Brian, reading plan.md):** CLAUDE.md told every session to read plan.md before any
   task, and plan.md had grown to 28,090 bytes (about 7k tokens, ESTIMATE at ~4 characters a
   token). 63% of it was results and logs, not plan: old §4a–§5a (Jev spike, knowledge, model
@@ -929,7 +953,11 @@ and never judged it as a visitor would.
   `SAVE_TURNS=0` set in the shell, 2 tests in `tests/test_transcripts.py` fail, at HEAD too: they
   don't set it themselves.)
 
-**09-26 · findings.md trimmed to findings; two log lines made plain** · commit "Remove review talking points and hiring-process text from the docs"
+---
+
+## 2026-09-26
+
+### 09-26 · findings.md trimmed to findings; two log lines made plain · commit "Remove review talking points and hiring-process text from the docs" · `3e876c5`
 - **Found:** `docs/research/findings.md` ended with four prepared quotes that weren't findings.
   Two 09-24 lines in this log weren't plain records of the work: the `899d1b4` heading and the
   first line of the `fc12e50` entry.
@@ -940,7 +968,7 @@ and never judged it as a visitor would.
   report, one is a recorded bot reply in `evals/results/compare-fixed-failures.md`, and one is
   this entry's heading, which names the commit. ruff clean, mypy clean, 117 unit tests pass.
 
-**09-26 · iPhone: the open chat locks the page behind it** · commit "Lock the page behind the open chat on phones so swipes scroll the chat"
+### 09-26 · iPhone: the open chat locks the page behind it · commit "Lock the page behind the open chat on phones so swipes scroll the chat" · `fba07c9`
 - **Found (Brian, iPhone screen recording):** swipes anywhere in the open chat scrolled or
   bounced the landing page behind it; the chat itself didn't scroll. `open()` never locked the
   page, and Deep Chat's message list (`#messages`) had no `overscroll-behavior`.
@@ -952,3 +980,19 @@ and never judged it as a visitor would.
   fails without the fix (the page scrolled to 900) and passes with it; all 13 e2e tests pass
   against a local server; emulation can't reproduce Safari's bounce, so Brian re-tests on his
   iPhone after deploy.
+
+### 09-26 · Build log moved to docs/; hash-only commits stopped · commit "Move the build log to docs/, add a summary, and stop hash-only commits"
+- **Found (pre-submission review):** 16 commits start "Log commit hash". CLAUDE.md asked each
+  entry for its commit hash, and a commit can't contain its own hash, so hashes came in
+  follow-up commits. No doc explained them. The plan.md split entry still said `pending-split`.
+  This file was at the root, and its last `##` heading was 09-23, so the 09-24 to 09-26 entries
+  sat under it.
+- **Changed:** moved to `docs/build-process.md` and updated every pointer, except in the
+  verbatim `/ship` record and a sample command in `tests/test_commit_gate.py`. Added a narrator
+  line and a summary at the top. The bold entries after the Deep Chat heading are now `###`
+  headings under one `##` per day; their text is unchanged. `pending-split` is now `393c7df`,
+  and the two 09-26 headings above have their hashes. CLAUDE.md and `/ship` now say: name the
+  commit by subject, never make a hash-only commit. REVIEW-GUIDE explains the 16 commits.
+  History not rewritten.
+- **Checked:** the summary's hashes with `git show`; `git show -M --stat` on this commit shows
+  the move as a rename. ruff clean, mypy clean, 117 unit tests pass.

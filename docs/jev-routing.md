@@ -100,7 +100,7 @@ Jev ──► topic + probability, asks_for_human probability
   (gpt-4o-mini: 4 vs 2 failures).
 
 How it was measured, including two invalid runs and why they were thrown out:
-`build-process.md`, Phase 6 (its Jev figures are superseded by the 09-25 entry "Jev claims
+`docs/build-process.md`, Phase 6 (its Jev figures are superseded by the 09-25 entry "Jev claims
 match the data; route replay fixed", commit `33eb401`).
 
 ## Limits and next steps

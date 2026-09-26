@@ -80,7 +80,7 @@ Without a Jev credential, routing falls back to the chat model automatically.
 With Claude Code, one phase at a time, with each commit reviewed and approved.
 - `CLAUDE.md`: the rules Claude works under. `plan.md`: scope, phases, decisions.
 - `docs/ai-bug-log.md`: where Claude was wrong, how it was caught, and what changed.
-- `build-process.md`: what actually happened, step by step.
+- `docs/build-process.md`: what actually happened, step by step.
 - `.claude/agents/`: `site-researcher`, `eval-writer`, `code-reviewer` subagents.
 - `.claude/commands/`: `/eval`, `/add-knowledge`, `/ship`.
 - `.claude/hooks/pre_commit_gate.py`: blocks a commit if lint, the type check, or unit tests

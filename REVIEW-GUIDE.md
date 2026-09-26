@@ -20,7 +20,11 @@
 - `.claude/`: 3 read-only subagent definitions, 3 commands (`/ship`, `/eval`, `/add-knowledge`),
   and a commit hook that runs lint, types, and tests and blocks the commit if one fails (it loads
   only when Claude Code is started in this folder).
-- `build-process.md`: step-by-step history with the evidence for each step.
+- `docs/build-process.md`: step-by-step history with the evidence for each step.
+- The 16 commits whose subject starts "Log commit hash" are bookkeeping (`a191cae` also marks
+  superseded Jev figures). A CLAUDE.md rule asked each build-log entry for its commit hash, and
+  a commit can't contain its own hash, so hashes came in follow-up commits. On 09-26 the rule
+  changed: entries name their commit by subject.
 - **How the tooling actually ran** (session logs). The build session started in the parent folder,
   where this repo's hook doesn't load, so it never blocked a real commit (no hook events in 572 Bash
   calls); it was tested by piping payloads in by hand. In that session my global guard

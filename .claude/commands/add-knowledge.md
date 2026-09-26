@@ -10,4 +10,4 @@ Add knowledge from $ARGUMENTS to `knowledge/cadre.md`.
 3. After approval, add the lines in the right section (format: fact — "exact quote" — URL).
 4. Run `.venv/bin/python tools/verify_knowledge.py`. Every quote must match the live page.
 5. Add or update an eval case in `evals/cases.yaml` that exercises the new fact, run it with
-   `/eval --only <id>`, and log the change in build-process.md.
+   `/eval --only <id>`, and log the change in docs/build-process.md.

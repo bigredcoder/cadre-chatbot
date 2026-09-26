@@ -1,7 +1,7 @@
 # Results: Jev spike, knowledge, model choice and running costs
 
 Split out of `plan.md` on 09-25. Sections keep their old plan.md numbers, which
-`build-process.md` cites.
+`docs/build-process.md` cites.
 
 ## 4a. Phase 1 findings (Jev spike, 2026-09-23)
 Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
