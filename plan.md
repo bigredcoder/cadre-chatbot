@@ -40,7 +40,7 @@ It doesn't guess.
    reply, topic, confidence, router, model, latency, tokens, cost, outcome). Emails, phone
    and card numbers are redacted before the models see them and before saving; rows are
    deleted after 30 days; described on `/privacy.html`.
-7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 76 unit tests,
+7. Unit tests + ~20-case answer-quality test set, one command each (shipped: 112 unit tests,
    29 eval cases, 12 browser tests)
 8. Model comparison on the same test set (quality / speed / cost)
 9. Budget and abuse guards
@@ -96,7 +96,7 @@ Each phase: build → verify → explain → approve → commit.
     Write a short "Why this model" paragraph: why the winner, why not the runners-up.
     Also explain why Jev for routing (Phase 1 + Phase 4 measurements) vs. using the chat
     model for routing too. **Done:** `google/gemini-2.5-flash` chosen (§5); Jev benchmark in §6a.
-- [x] **7. Harden:** rate limits, code-reviewer pass (8 fixes), README, browser and load tests
+- [x] **7. Harden:** rate limits, code review pass (8 fixes), README, browser and load tests
 - [x] **8. Device testing + UI rebuild (09-23/24):** chat window rebuilt on Deep Chat after
   iPhone testing; iPhone tests in Safari's engine (§6b)
 - [x] **9. Pre-submission audit (09-24):** skeptical-reviewer audit of code, docs, and the live
@@ -126,8 +126,8 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
 ## 4b. Phase 2 findings (knowledge, 2026-09-23)
 - `knowledge/cadre.md`: 77 facts from 21 cadre.ai pages, each with an exact quote and URL.
 - `tools/verify_knowledge.py` string-matches every quote against the live page: 77/77 pass.
-- Research was split: the `site-researcher` subagent (read-only, `.claude/agents/`) covered
-  the services pages while I covered industries, case studies, and contact in parallel.
+- Research was split: a general-purpose helper, doing the `site-researcher` job, covered the
+  services pages while I covered industries, case studies, and contact in parallel.
 - Deeper research closed gaps the first scan missed: the 8 pillar names (/strategy),
   real security statements, plus support email, phone, and office address (/contact).
 
@@ -220,16 +220,17 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-23 | Quote checker flagged 2 of 77 quotes | Not wrong facts: split markup and a non-breaking hyphen | Inspected the raw page text around each failure | Normalizer handles both; 77/77 pass |
 | 09-23 | Prompt example answer (written by Claude) for construction | Included facts not in the knowledge file ("estimating, track project health"); the model repeated them word for word | Live test of the answer engine; compared the answer to knowledge/cadre.md | Example rewritten with knowledge-only facts; rule added: examples may only use knowledge facts; eval case added in Phase 6 |
 | 09-23 | `/privacy` route returning `FileResponse(public/privacy.html)` | Worked locally, 500 on Vercel: `public/` isn't bundled into the Python function | Post-deploy check of each page; traceback in `vercel logs` | Link to the static `/privacy.html`; gotcha added to CLAUDE.md |
-| 09-23 | eval-writer subagent claimed 3 knowledge quotes didn't match cadre.ai | False: its web tool summarizes pages and loses detail | Re-ran `verify_knowledge.py`: 77/77 still match live HTML | Kept the facts; rule: facts are checked by script, never by an AI's reading |
+| 09-23 | The helper subagent, doing the eval-writer job, claimed 3 knowledge quotes didn't match cadre.ai | False: its web tool summarizes pages and loses detail (the helper was general-purpose; eval-writer's own definition has only Read, Grep, Glob) | Re-ran `verify_knowledge.py`: 77/77 still match live HTML | Kept the facts; rule: facts are checked by script, never by an AI's reading |
 | 09-23 | 2 eval cases written too strictly | They failed correct, safe answers (test bugs, not bot bugs) | Read each failing reply before judging | Widened the expected wording; logged as test fixes |
 | 09-23 | Claude's summary of the model comparison: "7 of 11 models implied a SOC 2 certification"; "without Jev the handoff never fired" | Both false. The replies were correct; the checker was too strict (wording, curly quotes, bold) and scored a wrong topic label as critical | Brian asked for real examples of each error; reading them exposed it | Checker normalizes text; severity comes from what failed; saved replies rescored; failure-example reports generated automatically |
-| 09-23 | Code written across Phases 3–5 | code-reviewer subagent found 8 issues: a stream that could end silently ("Writing an answer…" forever), client-controlled history size, transcript save delaying the UI, a form promising a follow-up the demo never sends, a whitespace name 500, Start over leaking into the new chat, short phones unredacted, a stale .env.example | Pre-submission review by the `code-reviewer` subagent; each claim checked against the code first (it had been wrong once before) | All 8 fixed with regression tests (50 unit tests); verifying #7 also exposed dates being redacted as phones, now fixed |
+| 09-23 | Code written across Phases 3–5 | 8 issues: a stream that could end silently ("Writing an answer…" forever), client-controlled history size, transcript save delaying the UI, a form promising a follow-up the demo never sends, a whitespace name 500, Start over leaking into the new chat, short phones unredacted, a stale .env.example | Pre-submission review by the general-purpose helper subagent, doing the `code-reviewer` job; each claim checked against the code first (it had been wrong once before) | All 8 fixed with regression tests (50 unit tests); verifying #7 also exposed dates being redacted as phones, now fixed |
 | 09-23 | The chat window: hand-built by Claude (Phases 3–7) | Never put build-vs-use-a-component in front of Brian, though the research weighs buy vs. build vs. hybrid and the brief allows component libraries. The result jumped, overflowed on iPhone, and zoomed on input focus | Brian's own iPhone (screenshots); Claude had tested only Chromium at phone size, never Safari's engine | Replaced with Deep Chat (MIT, self-hosted); WebKit iPhone tests added that fail on any horizontal overflow or sub-16px input |
 | 09-23 | Test call to gpt-5-nano | Blank reply: the model spent all its tokens reasoning | Checked the output, not just the HTTP status | Empty replies are treated as errors (CLAUDE.md rule 7) |
 | 09-24 | Source-link rendering, the redaction rule, and the answer check (Claude, 09-23/24) | The label code threw on a path like `cadre.ai/foo-` and froze the input; 16-digit card numbers passed the phone rule unredacted; the answer check could hide the button while the reply promised a strategist; main.py had grown logic that CLAUDE.md said it doesn't hold | A skeptical pre-submission audit (Claude reviewing its own work, with the live bot and the code) | All fixed with regression tests: 7 JS render tests, card redaction test, offer and timeout tests; logic moved to `app/chat.py` |
 | 09-24 | Redaction moved before the model call (Claude) | The phone rule judged digit count, so "budget 25000-50000" reached the model as "[phone removed]", breaking pricing questions; 26/26 evals passed because no case had numbers | The `/ship` command's code-reviewer subagent, in a headless Claude Code run (`docs/claude-code-runs/`) | Phone *shape* rule plus a regression test for budgets, revenue, and team sizes |
 | 09-25 | Docs and comments written across the build (Claude) | 35 claims had drifted from the code, including a 39 s worst case that was really ~54 s; and the helper's own audit wrongly said the eval link check let any email through | A docs-vs-code audit by the helper subagent, each finding re-checked by hand before changing anything | Hard answer deadline with a test; docs corrected; the wrong finding rejected after testing it |
 | 09-25 | Jev headlines in README, REVIEW-GUIDE, plan.md and docs/jev-routing.md (Claude, 09-23/24) | Written from topic-label scores and a no-Jev baseline without the topic definitions. Also: "4× cheaper" counted Jev as $0, and gpt-oss-120b's "misrouted 88%" was all 52 routes returning `services`, also the fallback's default for a missing or unknown topic | A pre-submission review that recomputed them from the raw result files | Recomputed and rewritten: labels 40/40 vs 34/40, answers 51 vs 50, median faster, p90 slower, cost unmeasured; the unequal baseline is a stated limit |
+| 09-25 | Tooling claims in build-process.md, plan.md, CLAUDE.md, and the `/ship` record (Claude, 09-23/25) | They said the hook blocked commits, the subagents ran as their own types, and `/ship` ran the evals. The session logs show no hook events in 572 Bash calls (the session started in the parent folder), and in the build session one general-purpose helper did every subagent job; only the recorded `/ship` run used a subagent definition (code-reviewer) | A pre-submission review of the session logs | Corrected, and marked in build-process.md; REVIEW-GUIDE says how the tooling ran; the hook now catches `git -C . commit`, fails closed, and has tests |
 
 ## 6a. Documentation tasks (for the review)
 - **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the

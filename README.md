@@ -68,7 +68,7 @@ Without a Jev credential, routing falls back to the chat model automatically.
 ## Test it
 | Command | What it checks | Cost |
 |---|---|---|
-| `.venv/bin/python -m pytest -q` | 76 unit tests (Python + the widget's JS rendering), network faked | $0 |
+| `.venv/bin/python -m pytest -q` | 112 unit tests (Python + the widget's JS rendering), network faked | $0 |
 | `.venv/bin/python -m pytest e2e -q` | 12 browser tests: Chromium desktop + iPhone 14 in WebKit (keyboard, form, overflow) | ~$0.01 |
 | `.venv/bin/python tools/load_test.py` | Concurrent visitors + a rate-limit burst, live site (the burst now also trips the Vercel firewall rule) | ~$0.03 |
 | `.venv/bin/python tools/verify_knowledge.py` | Every knowledge quote still matches cadre.ai | $0 |
@@ -81,7 +81,8 @@ With Claude Code, one phase at a time, with each commit reviewed and approved.
 - `build-process.md`: what actually happened, step by step.
 - `.claude/agents/`: `site-researcher`, `eval-writer`, `code-reviewer` subagents.
 - `.claude/commands/`: `/eval`, `/add-knowledge`, `/ship`.
-- `.claude/hooks/pre_commit_gate.py`: blocks any commit if lint, the type check, or unit tests fail.
+- `.claude/hooks/pre_commit_gate.py`: blocks a commit if lint, the type check, or unit tests
+  fail, when Claude Code is started in this folder. How the tooling actually ran: REVIEW-GUIDE.md.
 
 ## Running costs
 About **$10/month** fixed (Supabase) plus about **$0.001 per answer** (answer model; Jev's

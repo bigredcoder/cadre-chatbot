@@ -62,8 +62,9 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 ## How we work
 - One phase from `plan.md` at a time. Finish, verify, explain, then Brian approves the commit.
 - Small commits, imperative messages ("Add Jev router with model fallback").
-- Before any commit: `ruff check .`, `mypy app`, and `pytest -q` must pass (the hook in
-  `.claude/hooks/` enforces it).
+- Before any commit: `ruff check .`, `mypy app`, and `pytest -q` must pass. The hook in
+  `.claude/hooks/` enforces this only when Claude Code is started in this folder; otherwise
+  run them by hand.
 - When you're unsure, or the code gets bigger than the problem, stop and say so.
 - When Brian rejects or corrects your output, log it in plan.md → "AI-bug log".
 - **Never report an eval failure without its real example** (question, actual reply, what
@@ -72,6 +73,15 @@ explainable beats clever. Every file should be readable top to bottom by a non-s
 - **Keep `build-process.md` current.** After every meaningful step (not just phase ends),
   append or update an entry: did / found / decided / checked / commit hash. Facts only,
   no marketing. It's the record of how the app was built, so never let it fall behind.
+
+## Tools in this repo (`.claude/`)
+Start Claude Code in this folder so the commit gate (`.claude/hooks/pre_commit_gate.py`) loads.
+- `/ship`: before proposing a commit. Checks, quote check, evals if needed, code review.
+- `/eval`: after changing `app/`, `prompts/`, or `knowledge/`. Costs a few cents.
+- `/add-knowledge <cadre.ai URL>`: to add a sourced fact to `knowledge/cadre.md`.
+- `site-researcher`: pull quoted facts from cadre.ai pages (used by `/add-knowledge`).
+- `eval-writer`: draft new cases for `evals/cases.yaml`; Brian approves the list.
+- `code-reviewer`: review a diff for real bugs before a commit (used by `/ship`).
 
 ## Commands (always use the project venv: `.venv/bin/...`)
 - First-time setup: `python3 -m venv .venv && .venv/bin/pip install fastapi httpx pytest ruff uvicorn pyyaml pytest-playwright mypy && .venv/bin/playwright install chromium webkit`

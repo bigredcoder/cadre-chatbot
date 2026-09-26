@@ -16,9 +16,18 @@
 **Claude Code workflow**
 - `CLAUDE.md`: the working rules. `plan.md`: scope, decisions, and the **AI-bug log** (§6),
   where Claude was wrong, how it was caught, and what changed.
-- `.claude/`: 3 read-only subagents, 3 commands (`/ship`, `/eval`, `/add-knowledge`), and a
-  hook that blocks any commit failing lint, types, or tests.
+- `.claude/`: 3 read-only subagent definitions, 3 commands (`/ship`, `/eval`, `/add-knowledge`),
+  and a commit hook that runs lint, types, and tests and blocks the commit if one fails (it loads
+  only when Claude Code is started in this folder).
 - `build-process.md`: step-by-step history with the evidence for each step.
+- **How the tooling actually ran** (session logs). The build session started in the parent folder,
+  where this repo's hook doesn't load, so it never blocked a real commit (no hook events in 572 Bash
+  calls); it was tested by piping payloads in by hand. In that session my global guard
+  (`~/.claude/delegation-check.sh`) denied 7 of 8 subagent spawns (all general-purpose), so one
+  helper did every subagent job. code-reviewer ran under its own definition once, in the recorded
+  `/ship` run, and caught budgets redacted as phones. `/eval` and `/add-knowledge` never ran. The
+  hook, commands, and code-reviewer came in `3b251ad` (10th commit); site-researcher in `c460fff`,
+  eval-writer in `b2133b3`.
 
 **System design**
 - Request flow: `public/index.html` → `app/main.py` (routes only) → `app/chat.py` (one turn:
@@ -44,7 +53,7 @@
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**
-- 76 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
+- 112 unit tests (Python plus the widget's JS rendering), 12 browser tests (desktop plus iPhone
   WebKit), and 29 answer-quality evals scored by code.
 - Model choice: 11 models on the same cases, with and without Jev (`evals/results/full-grid.md`).
 
