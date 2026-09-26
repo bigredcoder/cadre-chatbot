@@ -158,6 +158,32 @@ def test_a_cut_off_answer_keeps_what_arrived_and_says_so(page: Page):
     expect(page.locator(LAST_ANSWER)).to_contain_text("couldn't answer that just now")
 
 
+def test_stop_cancels_the_answer_and_nothing_follows(page: Page):
+    # 09-26: Stop only froze the text; the rest kept streaming into history and an offer card
+    # still appeared. Faked answer (no model call): a long pricing reply that asks for an offer.
+    long = "Cadre doesn't publish prices for the 45-day Intensive. " * 40
+    sse = ('event: route\ndata: {"topic": "pricing", "handoff": true, "router": "jev"}\n\n'
+           f'event: token\ndata: {{"text": "{long}"}}\n\n'
+           'event: done\ndata: {"handoff": true, "model": "fake", "latency_ms": 5}\n\n')
+    sent = []
+    def chat_route(route):
+        sent.append(route.request.post_data_json)
+        route.fulfill(status=200, headers={"Content-Type": "text/event-stream"}, body=sse)
+    page.route("**/api/chat", chat_route)
+    open_chat(page)
+    ask(page, "How much does the 45-day intensive cost?")
+    expect(page.locator(LAST_ANSWER)).to_contain_text("Cadre doesn't publish")
+    page.locator("deep-chat .input-button.inside-end").click()              # Stop, mid-reveal
+    page.wait_for_timeout(1500)
+    shown = page.locator(LAST_ANSWER).inner_text()
+    assert len(shown) < len(long.strip()), "Stop must cut the answer off where it was"
+    expect(page.locator("deep-chat .cad-offer, deep-chat .cad-form")).to_have_count(0)
+    ask(page, "Thanks")                                                         # history sent next
+    expect(page.locator(LAST_ANSWER)).to_contain_text("Cadre doesn't publish")
+    assistant = [m for m in sent[-1]["messages"] if m["role"] == "assistant"]
+    assert assistant and len(assistant[-1]["content"]) < len(long.strip()), "history holds only what was shown"
+
+
 def test_privacy_page_matches_storage(page: Page):
     # No longer linked from the widget (Brian, 09-24); the page stays accurate at /privacy.html
     page.goto(BASE + "/privacy.html")

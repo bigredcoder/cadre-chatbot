@@ -1045,3 +1045,14 @@ and never judged it as a visitor would.
 - **Checked:** `tools/verify_knowledge.py`: 78 quotes, 0 failed, 22 pages. The case 3×:
   3/3 pass ("Yes, the AI Maturity Index is free, and takes about 10 minutes to complete."),
   `evals/results/maturity-free.json`. ruff clean, mypy clean, 118 unit tests pass.
+
+### 09-26 · Stop cancels the answer · commit "Make Stop cancel the request and keep only what the visitor saw"
+- **Found (pre-submission review, live):** Stop froze the reply mid-sentence, but the request kept
+  running: about 8 s later an offer card appeared, and the next question sent the full, unseen
+  answer as history. Deep Chat's `signals.stopClicked` was never wired.
+- **Changed:** each answer wires `signals.stopClicked.listener`: it aborts that request's
+  `AbortController`, stops the reveal, keeps only the characters already shown (in the bubble and
+  in `history`), and skips the status line and the handoff card.
+- **Checked:** new browser test `test_stop_cancels_the_answer_and_nothing_follows` (a faked long
+  pricing answer, no model call) fails without the fix (the offer card appeared) and passes with
+  it; all 14 browser tests pass against a local server; ruff clean, mypy clean, 118 unit tests pass.

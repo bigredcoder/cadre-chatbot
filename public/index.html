@@ -235,11 +235,16 @@
       chat.shadowRoot?.querySelectorAll(".cad-starters").forEach((el) => el.classList.add("cad-gone"));
       history.push({ role: "user", content: text });
       let received = "", shown = 0, meta = null, failed = false, opened = false, frame = 0, finish, routeData = {};
+      let stopped = false;
       const mySession = session;
       const done = new Promise((resolve) => { finish = resolve; });
+      // Stop button: cancel the request and keep only what the visitor already saw (09-26: Stop only
+      // froze the text; the rest still streamed into history and a form could appear afterwards)
+      signals.stopClicked.listener = () => { stopped = true; abortCtl && abortCtl.abort(); if (!frame) finish(); };
       // The model sends text in lumps; reveal it a few characters per frame, faster when behind
       const tick = () => {
         frame = 0;
+        if (stopped) return finish();
         if (mySession !== session) return finish();  // "New chat" pressed: stop writing into the new chat
         if (received.length > shown) {
           shown = REDUCED ? received.length : shown + Math.max(2, Math.ceil((received.length - shown) / 14));
@@ -278,22 +283,23 @@
         if (!meta && !failed) { failed = true; received = received ? received + "\n\n" + FALLBACK : FALLBACK; reveal(); }
       } catch (e) {
         // A hiccup after the answer finished ("done" arrived) must not replace it (audit 09-25)
-        if (!meta) { failed = true; received = e.message === "slow" ? SLOW_DOWN : FALLBACK; shown = 0; }
+        if (!meta && !stopped) { failed = true; received = e.message === "slow" ? SLOW_DOWN : FALLBACK; shown = 0; }
         reveal();
       }
       await done;
+      if (stopped) received = received.slice(0, shown);  // what the visitor saw, nothing more
       try {
         // Final full render, awaited, so the last characters are never dropped on close (09-23 bug:
         // an answer ended at "hello@gocadre.a")
         if (received && mySession === session) await signals.onResponse({ html: render(received), overwrite: true });
         if (mySession === session) {
-          if (!failed) history.push({ role: "assistant", content: received.trim() });
-          if (meta) showStatus(null, meta);
+          if (!failed && received.trim()) history.push({ role: "assistant", content: received.trim() });
+          if (meta && !stopped) showStatus(null, meta);
         }
       } finally {
         signals.onClose();  // always release the input, even if rendering throws (audit 09-24: chat froze)
       }
-      if (mySession === session && meta && meta.handoff) {
+      if (mySession === session && meta && meta.handoff && !stopped) {
         // They asked for a person → show the form now. Otherwise (e.g. pricing) → offer it.
         const explicit = routeData.asks_for_human || routeData.topic === "booking";
         chat.addMessage({ role: "ai", html: explicit ? formHtml() : offerHtml() });
