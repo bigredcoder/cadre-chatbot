@@ -87,6 +87,12 @@
     #panel.open { transform:none; }
     .ph { padding-top:calc(10px + env(safe-area-inset-top)); }
   }
+  /* Phone: while the chat is open the page behind it is locked. Without this, iPhone Safari passed
+     swipes through to the page, so the page moved behind the chat and the chat didn't scroll
+     (Brian's device test, 09-26). The JS sets body's top so the page doesn't jump. */
+  html.chat-lock, html.chat-lock body { overflow:hidden; overscroll-behavior:none; }
+  html.chat-lock body { position:fixed; left:0; right:0; width:100%; }
+  #panel { overscroll-behavior:contain; }
   @media (prefers-reduced-motion:reduce) { #panel, #panel.open, #launcher { transition:none !important; transform:none !important; } }
 </style>
 </head>
@@ -366,6 +372,8 @@
     .cad-offer span { font-size: 14px; color: #2b2b2b; }
     .cad-offer-btn { background: #0C0407; color: #fff; border: none; border-radius: 36px; padding: 8px 14px;
                      font: 500 14px Inter, Arial, sans-serif; cursor: pointer; white-space: nowrap; }
+    /* Deep Chat's scrolling message list: keep swipes inside it at its top and bottom */
+    #messages { overscroll-behavior: contain; }
     /* Send button: vertically centered inside the text box */
     .inside-end { top: 50% !important; bottom: auto !important; transform: translateY(-50%) !important; right: 8px !important; }
   `;
@@ -378,9 +386,9 @@
   // ---- iPhone keyboard: Safari doesn't shrink the page when the keyboard opens, so the chat
   // would sit under it. Size the phone panel to the visible area (visualViewport) and keep the
   // field being typed in on screen. ----
-  const vv = window.visualViewport;
+  const vv = window.visualViewport, PHONE = window.matchMedia("(max-width: 520px)");
   function fitToKeyboard() {
-    if (!vv || !window.matchMedia("(max-width: 520px)").matches) { panel.style.height = ""; panel.style.top = ""; return; }
+    if (!vv || !PHONE.matches) { panel.style.height = ""; panel.style.top = ""; return; }
     panel.style.height = vv.height + "px";
     panel.style.top = vv.offsetTop + "px";
   }
@@ -392,9 +400,26 @@
     }
   });
 
+  // ---- Phone: lock the page behind the full-screen chat (see the chat-lock CSS) ----
+  let lockedY = 0;
+  function lockPage() {
+    if (!PHONE.matches || document.documentElement.classList.contains("chat-lock")) return;
+    lockedY = window.scrollY;
+    document.body.style.top = -lockedY + "px";
+    document.documentElement.classList.add("chat-lock");
+  }
+  function unlockPage() {
+    if (!document.documentElement.classList.contains("chat-lock")) return;
+    document.documentElement.classList.remove("chat-lock");
+    document.body.style.top = "";
+    window.scrollTo(0, lockedY);
+  }
+  PHONE.addEventListener("change", () => (panel.classList.contains("open") && PHONE.matches ? lockPage() : unlockPage()));
+
   // ---- Open / close / menu ----
   function open() {
     panel.hidden = false;
+    lockPage();
     fitToKeyboard();
     requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
     launcher.classList.add("is-open"); launcher.setAttribute("aria-expanded", "true"); launcher.setAttribute("aria-label", "Close the assistant");
@@ -403,6 +428,7 @@
   function close() {
     closeMenu();
     panel.classList.remove("open");
+    unlockPage();
     launcher.classList.remove("is-open"); launcher.setAttribute("aria-expanded", "false"); launcher.setAttribute("aria-label", "Ask Cadre's AI");
     launcher.focus();
     setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, REDUCED ? 0 : 300);

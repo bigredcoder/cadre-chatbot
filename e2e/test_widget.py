@@ -187,6 +187,27 @@ def test_iphone_keyboard_never_covers_the_form_and_nothing_auto_focuses(iphone: 
     assert box["y"] >= 0 and box["y"] + box["height"] <= visible, f"field hidden by keyboard: {box}, visible={visible}"
 
 
+def test_iphone_open_chat_locks_the_page_behind_it(iphone: Page):
+    # On Brian's iPhone (09-26), swipes in the open chat scrolled the page behind it, so the page
+    # moved and the chat didn't. Open: the page is locked and the chat list keeps its swipes.
+    # Close: the page is back where the visitor left it. No model call: the forms come from the
+    # header button.
+    iphone.goto(BASE)
+    iphone.evaluate("document.querySelector('main').style.minHeight = '3000px'; scrollTo(0, 500)")
+    iphone.get_by_role("button", name="Ask Cadre's AI").tap()
+    expect(iphone.locator(INPUT)).to_be_visible()
+    for _ in range(3):                                            # enough content for the chat to scroll
+        iphone.get_by_role("button", name="Talk to a strategist").tap()
+    state = iphone.evaluate("""() => { scrollTo(0, 900);
+      const m = document.getElementById('chat').shadowRoot.querySelector('#messages');
+      return { pageY: scrollY, bodyTop: document.body.style.top, contain: getComputedStyle(m).overscrollBehaviorY,
+               chatScrolls: m.scrollHeight > m.clientHeight }; }""")
+    assert state == {"pageY": 0, "bodyTop": "-500px", "contain": "contain", "chatScrolls": True}, state
+    iphone.locator("#close").tap()
+    iphone.wait_for_timeout(400)
+    assert iphone.evaluate("scrollY") == 500, "closing must put the page back where it was"
+
+
 def test_iphone_inputs_are_16px_so_safari_does_not_zoom(iphone: Page):
     iphone.goto(BASE)
     iphone.get_by_role("button", name="Ask Cadre's AI").tap()

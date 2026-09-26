@@ -939,3 +939,16 @@ and never judged it as a visitor would.
   removed wording, private names and local paths: 4 lines left, all kept. Two are in the research
   report, one is a recorded bot reply in `evals/results/compare-fixed-failures.md`, and one is
   this entry's heading, which names the commit. ruff clean, mypy clean, 117 unit tests pass.
+
+**09-26 · iPhone: the open chat locks the page behind it** · commit "Lock the page behind the open chat on phones so swipes scroll the chat"
+- **Found (Brian, iPhone screen recording):** swipes anywhere in the open chat scrolled or
+  bounced the landing page behind it; the chat itself didn't scroll. `open()` never locked the
+  page, and Deep Chat's message list (`#messages`) had no `overscroll-behavior`.
+- **Changed:** on phones, opening the chat adds `chat-lock` to `<html>` (page `overflow:hidden`,
+  `body` fixed at the current scroll position, `overscroll-behavior:none`); closing removes it
+  and scrolls back to where the visitor was. `#panel` and `#messages` get
+  `overscroll-behavior:contain`.
+- **Checked:** new e2e test `test_iphone_open_chat_locks_the_page_behind_it` (WebKit, iPhone 14)
+  fails without the fix (the page scrolled to 900) and passes with it; all 13 e2e tests pass
+  against a local server; emulation can't reproduce Safari's bounce, so Brian re-tests on his
+  iPhone after deploy.
