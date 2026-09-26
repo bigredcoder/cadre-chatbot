@@ -89,6 +89,9 @@ and fixes from a pre-submission audit. See "Speed and scope" below.
 - Cost: about $0.001 per answer; about $10/month fixed (`docs/model-choice.md` §5a).
 
 ## Known limits (stated up front)
+- Whose account pays: answers run on Cadre's OpenRouter key (swapped in on 09-26). Jev routing
+  bills to my Vercel AI Gateway account and transcripts go to my Supabase project;
+  `ROUTER_MODE=model_only` would put routing on the OpenRouter key too.
 - The handoff form is a demo: nothing is sent or stored.
 - Conversation history comes from the browser (capped at 8 messages). A server-side session
   store is the production fix.

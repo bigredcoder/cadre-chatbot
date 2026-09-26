@@ -1065,3 +1065,11 @@ and never judged it as a visitor would.
   and scope" says the 09-25 evening and 09-26 fixes aren't in the ~7-hour figure and what would
   have been cut under a strict 4-6 hours.
 - **Checked:** every hash and time in the table against `git log`; docs only.
+
+### 09-26 · Cadre's key is live · commit "Record the switch to Cadre's OpenRouter key"
+- **Changed (Brian):** put Cadre's OpenRouter key in Vercel (`OPENROUTER_API_KEY`, Production,
+  updated 09-26 12:06); the production deployment was redeployed so it takes effect.
+- **Checked:** `/api/health` 200; one live question ("What does Cadre AI do, and do you work with
+  manufacturing companies?") answered correctly, cost $0.0014935; the dev key's OpenRouter usage
+  read $3.533023593 before and 60 s after, so the answer was billed to Cadre's key. REVIEW-GUIDE
+  now says which account pays for what; plan.md Phase 10 is ticked.

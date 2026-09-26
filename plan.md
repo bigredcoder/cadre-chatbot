@@ -110,8 +110,8 @@ Each phase: build → verify → explain → approve → commit.
 - [x] **9. Pre-submission audit (09-24):** skeptical-reviewer audit of code, docs, and the live
   bot; fixes for a chat freeze, card-number redaction, time limits, redaction before model
   calls, a shared firewall rate limit, and `REVIEW-GUIDE.md`
-- [ ] **10. Submit:** swap in Cadre's key (Brian approves), package with `tools/package.sh`
-  (a fresh clone, zipped with `.git`), upload
+- [x] **10. Submit (09-26):** Cadre's key swapped in by Brian and verified; packaged with
+  `tools/package.sh` (a fresh clone, zipped with `.git`); Brian uploads it
 
 ## Moved out (09-25)
 - Old §4a, §4b, §5, §5a (Jev spike, knowledge, model comparison, running costs):
