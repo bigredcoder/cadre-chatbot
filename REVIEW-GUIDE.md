@@ -3,6 +3,21 @@
 **Live:** https://cadre-chatbot-xi.vercel.app. Click **Ask Cadre's AI**, then ••• →
 **Show behind the scenes** to see the route, model, time, and cost of each answer.
 
+## Day one (09-23): planned, then built in about 3 hours
+Planned in the morning; the plan is the first commit. `git checkout first-complete-version`
+shows the result.
+| Time | Commit | What worked |
+|---|---|---|
+| 12:06 | `73b0d90` | CLAUDE.md and plan.md only: the plan came first |
+| 12:15 | `59f3557` | Deployed to Vercel |
+| 12:42 | `3104a37` | Streaming answers in the chat widget |
+| 13:09 | `4ec2e9c` | Handoff form and redacted conversation storage |
+| 15:11 | `b2133b3` | Answer-quality evals and the model comparison |
+| 15:23 | `3b251ad` | Rate limits, docs, browser tests: tag `first-complete-version` |
+
+Later commits (09-23 evening to 09-26) are hardening I chose: real-iPhone fixes, a UI rebuild,
+and fixes from a pre-submission audit. See "Speed and scope" below.
+
 ## Try these (2 minutes)
 | Ask | What you should see |
 |---|---|
@@ -47,14 +62,15 @@
 - Data: one table (`db/schema.sql`), insert-only key, redacted, deleted after 30 days.
 
 **Speed and scope**
-- **Time:** about 7 hours of active work, spread over three days (09-23 to 09-25), measured
-  from the Claude Code session logs with breaks left out. The commits span 52 hours of
-  calendar time, not working time.
-- The first streaming answers worked 36 minutes after the first commit (git log, 09-23
-  12:06 → 12:42). The eval-tested version covering the brief was done by 15:23 the same day
-  (`3b251ad`, about 3 hours after the first commit).
+- **Time:** about 7 hours of active work from 09-23 to 09-25, measured from the Claude Code
+  session logs with breaks left out. The 09-25 evening and 09-26 fixes aren't in that figure:
+  Claude Code ran most of them as automated jobs that I approved. Commit dates show calendar
+  time, not working time.
+- The brief's version was done on day one (table above): first answers 36 minutes after the
+  first commit, the eval-tested version by 15:23 (`3b251ad`, tag `first-complete-version`).
 - Everything after that was extra work I chose to do: real-iPhone testing, a UI rebuild on a
-  proven component, and a pre-submission audit.
+  proven component, and a pre-submission audit. Held strictly to 4-6 hours, I'd have stopped
+  at the tag and listed the rest as next steps.
 - In and out of scope, with reasons: plan.md §2.
 
 **Code quality and verification**

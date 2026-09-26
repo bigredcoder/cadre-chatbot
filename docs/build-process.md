@@ -1056,3 +1056,12 @@ and never judged it as a visitor would.
 - **Checked:** new browser test `test_stop_cancels_the_answer_and_nothing_follows` (a faked long
   pricing answer, no model call) fails without the fix (the offer card appeared) and passes with
   it; all 14 browser tests pass against a local server; ruff clean, mypy clean, 118 unit tests pass.
+
+### 09-26 · Reviewer guide opens with the day-one timeline · commit "Open the reviewer guide with the day-one timeline and tag"
+- **Found (Brian):** the git log lists the newest commits first, so a reviewer sees the 09-25/26
+  cleanup before the day-one build, and nothing pointed at the version that met the brief.
+- **Changed:** annotated tag `first-complete-version` on `3b251ad` (09-23 15:23). REVIEW-GUIDE now
+  opens with a 6-line day-one timeline (times and hashes from `git log`) and the tag, and "Speed
+  and scope" says the 09-25 evening and 09-26 fixes aren't in the ~7-hour figure and what would
+  have been cut under a strict 4-6 hours.
+- **Checked:** every hash and time in the table against `git log`; docs only.
