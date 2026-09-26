@@ -152,26 +152,27 @@ def main() -> int:
         os.environ["ROUTER_MODE"] = "model_only"
     from fastapi.testclient import TestClient
 
+    from app import chat as app_chat
     from app import config
-    from app import main as app_main
     from app.main import app
     from app.router import Route
 
+    # Patch `route` where the turn looks it up: app/chat.py (main.py stopped using it in fc12e50)
     recorded: dict = {}
     if args.routes:
         fixed = json.loads(Path(args.routes).read_text())
 
         async def replay(history, token=None):
             return Route(**fixed[ROUTE_KEY["value"]])
-        app_main.route = replay
+        app_chat.route = replay
     elif args.record_routes:
-        real_route = app_main.route
+        real_route = app_chat.route
 
         async def record(history, token=None):
             decision = await real_route(history, token)
             recorded[ROUTE_KEY["value"]] = decision.as_dict()
             return decision
-        app_main.route = record
+        app_chat.route = record
 
     cases = yaml.safe_load((ROOT / "evals" / "cases.yaml").read_text())
     if args.only:

@@ -68,7 +68,7 @@ no autonomous actions.
 |---|---|---|
 | Python + FastAPI + one HTML page | Readable, matches the role, fast to deploy on Vercel | Less UI polish than a React stack |
 | **Chat window = Deep Chat** (changed 09-23) | A proven component for the solved problem (streaming, scroll, mobile); our effort goes to grounding, routing, and evals. Research: hybrid is the most practical deployment | A 387 KB dependency; self-hosted so no third-party script can take the page down |
-| Jev for routing, chat model for answers | Jev returns typed decisions with confidence; cheap and fast | New (Sept 2026) service → built a fallback |
+| Jev for routing, chat model for answers | Jev returns typed decisions with confidence; faster median routing (§5) | New (Sept 2026) service → built a fallback; cost unmeasured (recorded $0 on free credits) |
 | Model fallback when Jev is unsure or down | The demo can't depend on a week-old beta | Slightly more code |
 | Knowledge in the prompt, not retrieval | Small corpus; simpler and more accurate | Won't scale to hundreds of pages as-is |
 | ~~Capture leads on handoff~~ → replaced 09-23 by the demo form below | The bot's job is to free up strategists | Real capture is designed (`db/schema.sql`), not built |
@@ -147,14 +147,17 @@ Ran `spikes/jev_spike.py`: 3 messages via AI Gateway `/v1/evaluate`.
 - **Limits:** 52 runs on one test set can't prove zero failures (research §8). Rerun the evals
   whenever the prompt, knowledge, or model changes.
 
-**Full grid, all 11 models with and without Jev:** `evals/results/full-grid.md`. Jev improved
-accuracy and speed for **every** model (11/11), and cost for 10 of 11 (gpt-oss-120b: equal). Examples: gemini-2.5-flash 52 vs 44
-correct; gpt-oss-120b 51 vs 16 (it misrouted 88% of messages on its own); gpt-4.1-nano
-without Jev invented a LinkedIn URL.
+**Full grid, all 11 models with and without Jev:** `evals/results/full-grid.md`. The with-Jev
+arm replays one recorded set of routes, so every model gets the same topic score by
+construction (that recording scored 100%). On answer checks, Jev was better for 7 models, tied
+for 3, worse for 1 (gpt-4o-mini: 4 vs 2 failures). Example: gpt-4.1-nano without Jev invented a
+LinkedIn URL.
 
-**Why Jev for routing** (benchmark, same model, same cases): 51 vs 44 passes, topic labels
-100% vs 85%, routing 0.38 s vs 0.66 s, and 4× cheaper per decision than letting the chat model
-route. Its rate limits are covered by a proven fallback. Full write-up: task in §6a.
+**Why Jev for routing** (benchmark, same model, same cases, §6a): topic labels 40/40 vs 34/40,
+median routing 0.38 s vs 0.66 s. Answers about the same (51 vs 50 of 52), p90 routing worse
+(1.3 s vs 0.8 s), Jev's cost unmeasured (recorded $0 on free credits), and the baseline got
+only topic names, not Jev's definitions (`app/router.py:92` vs `:47`). Kept for typed decisions
+with confidence (§3); its rate limits are covered by a proven fallback.
 
 Fair comparison, 2026-09-23 (**corrected** the same day after reviewing every failing reply;
 see "Correction" below): 26 cases, critical cases ×3 (52 runs per model), **identical Jev
@@ -196,12 +199,12 @@ Actual where measured; ESTIMATE / ASSUMED where not.
 | **Vercel hosting** | Hobby plan: the app, deploys, OIDC auth | **$0** | Hobby is for non-commercial use; a real Cadre deployment would need a paid plan (ASSUMED ~$20 per team member/month, check Vercel pricing) |
 | **Supabase database** | Project `cadre-chatbot` (conversation storage) | **$10/month** (quoted by Supabase when created; Brian deleted another project to offset it) | Same, until storage or traffic outgrows the compute size |
 | **Answer model** | gemini-2.5-flash via OpenRouter | ~**$0.91 per 1,000 answers** (measured in evals) | Scales with traffic: 10,000 answers/month ≈ $9 (ESTIMATE) |
-| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); ~$0.02 per 1,000 messages at list price (measured cost field) | ~$0.20 per 10,000 messages (ESTIMATE); a higher rate-limit tier may cost more (unknown) |
+| **Jev routing** | typesafe-ai/jev via Vercel AI Gateway | **$0 so far** (free credits); Jev's own price per call is unmeasured (recorded as $0 on every Jev-routed benchmark turn) | Unknown until billed; a higher rate-limit tier may cost more |
 | **Domain** | Using the free `cadre-chatbot-xi.vercel.app` | $0 | ~$10–20/year for a custom domain (ESTIMATE) |
 | **Build and testing spend** | Dev OpenRouter key: evals, 11-model comparisons, benchmarks | **$2.46 so far** (actual, 09-23) | Each full eval run of one model ≈ $0.02–0.25 depending on model |
 
 **Demo total:** about **$10/month** fixed (Supabase), plus under $1 in model usage for the
-review (ESTIMATE). **Cost per answer, all-in variable:** ~$0.001.
+review (ESTIMATE). **Cost per answer, variable:** ~$0.001 (answer model; Jev's cost unmeasured).
 
 ## 6. AI-bug log
 Where AI output was wrong or weak, how it was caught, and what changed.
@@ -226,6 +229,7 @@ Where AI output was wrong or weak, how it was caught, and what changed.
 | 09-24 | Source-link rendering, the redaction rule, and the answer check (Claude, 09-23/24) | The label code threw on a path like `cadre.ai/foo-` and froze the input; 16-digit card numbers passed the phone rule unredacted; the answer check could hide the button while the reply promised a strategist; main.py had grown logic that CLAUDE.md said it doesn't hold | A skeptical pre-submission audit (Claude reviewing its own work, with the live bot and the code) | All fixed with regression tests: 7 JS render tests, card redaction test, offer and timeout tests; logic moved to `app/chat.py` |
 | 09-24 | Redaction moved before the model call (Claude) | The phone rule judged digit count, so "budget 25000-50000" reached the model as "[phone removed]", breaking pricing questions; 26/26 evals passed because no case had numbers | The `/ship` command's code-reviewer subagent, in a headless Claude Code run (`docs/claude-code-runs/`) | Phone *shape* rule plus a regression test for budgets, revenue, and team sizes |
 | 09-25 | Docs and comments written across the build (Claude) | 35 claims had drifted from the code, including a 39 s worst case that was really ~54 s; and the helper's own audit wrongly said the eval link check let any email through | A docs-vs-code audit by the helper subagent, each finding re-checked by hand before changing anything | Hard answer deadline with a test; docs corrected; the wrong finding rejected after testing it |
+| 09-25 | Jev headlines in README, REVIEW-GUIDE, plan.md and docs/jev-routing.md (Claude, 09-23/24) | Written from topic-label scores and a no-Jev baseline without the topic definitions. Also: "4× cheaper" counted Jev as $0, and gpt-oss-120b's "misrouted 88%" was all 52 routes returning `services`, also the fallback's default for a missing or unknown topic | A pre-submission review that recomputed them from the raw result files | Recomputed and rewritten: labels 40/40 vs 34/40, answers 51 vs 50, median faster, p90 slower, cost unmeasured; the unequal baseline is a stated limit |
 
 ## 6a. Documentation tasks (for the review)
 - **Jev integration write-up (Brian, 09-23):** explain how Jev is used. That means the
@@ -235,14 +239,15 @@ Where AI output was wrong or weak, how it was caught, and what changed.
   auth via Vercel OIDC, and the Phase 1 / Phase 4 measurements. Target:
   `docs/jev-routing.md` plus a diagram. **Done:** `docs/jev-routing.md`.
 
-- **DONE 09-23 (corrected). Benchmark with vs. without Jev.** Same model (gemini-2.5-flash),
-  26 cases × critical ×3: **with Jev 51/52, topic labels 100%, handoff 97%, routing 0.38 s,
-  $0.000017/route**; without Jev 44/52, topic labels 85%, handoff 94%, routing 0.66 s,
-  $0.000072/route. **Neither had a critical failure**; without Jev, replies stayed safe but
-  7 were mislabeled (e.g. "Are you SOC 2 certified?" filed as `company`). An earlier claim
-  that "the handoff never fired" without Jev was wrong: the model's own tag still showed
-  it. Caveat: Jev returned HTTP 429 on 11/52 calls even sequentially (the fallback covered
-  them). Files: `evals/results/bench-*.json`, failure examples in `bench-failures.md`.
+- **DONE 09-23 (corrected 09-23, 09-25). Benchmark with vs. without Jev.** gemini-2.5-flash,
+  26 cases × critical ×3: **with Jev 51/52, topic labels 40/40, handoff 97%, routing median
+  0.38 s (p90 1.3 s)**; without Jev 44/52, labels 34/40, handoff 94%, median 0.66 s (p90
+  0.8 s). Routing cost: $0.000072/route without Jev; with Jev only the 13 fallback calls
+  were billed (Jev recorded $0 on free credits). **Neither had a critical failure**; 6 of
+  the 8 misses without Jev were wrong labels on otherwise passing replies (e.g. SOC 2 filed
+  as `company`), so answer checks were 51 vs 50. An earlier "handoff never fired" claim was
+  wrong: the model's own tag still showed it. Jev returned HTTP 429 on 11/52 calls; the
+  fallback covered them. Files: `evals/results/bench-*.json`, `bench-failures.md`.
 - *(original task)* **Benchmark with vs. without Jev (Brian, 09-23):** run the same eval set two ways,
   (a) Jev routing + rules and (b) chat-model-only routing (the fallback path, forced on),
   and compare topic accuracy, handoff accuracy, latency (median and slow tail), cost per

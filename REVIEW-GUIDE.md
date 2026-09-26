@@ -50,8 +50,9 @@
 
 ## Evidence in numbers
 - Evals: **28/28** on the full set (`evals/results/input-cleaning.json`), plus the new hidden-instruction case 3/3.
-- Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): 51 vs. 44 of 52 correct, routing
-  0.38s vs. 0.66s.
+- Jev vs. no Jev (gemini-2.5-flash benchmark, plan.md §6a): topic labels 40/40 vs. 34/40;
+  answer checks 51 vs. 50 of 52; routing median 0.38 s vs. 0.66 s, p90 1.3 s vs. 0.8 s.
+  Jev's own cost is unmeasured (recorded $0 on free credits).
 - Cost: about $0.001 per answer; about $10/month fixed (plan.md §5a).
 
 ## Known limits (stated up front)
@@ -63,3 +64,5 @@
 - Personal details (emails, phones, card numbers) are removed before anything reaches the model
   providers or the database. Names and free-text details are not.
 - Follow-up questions that depend on earlier context work only moderately well.
+- The Jev benchmark isn't equal: without Jev, the model classifier gets only the topic names
+  (`app/router.py:92`), while Jev gets their definitions (`app/router.py:47`).

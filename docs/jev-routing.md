@@ -72,19 +72,33 @@ Jev ──► topic + probability, asks_for_human probability
   criteria fired only on real requests. Handoff for pricing and booking is a **rule**, not a
   probability. (Research: model confidence isn't calibrated correctness.)
 
-## Evidence (evals, same 26 cases, 52 runs)
+## Evidence (gemini-2.5-flash, same 26 cases, 52 runs: `evals/results/bench-*-jev.json`)
 | | With Jev | Without Jev (chat model routes) |
 |---|---|---|
-| gemini-2.5-flash correct | 51/52 live (52/52 with replayed routes, `full-grid.md`) | 44/52 |
-| Topic labels correct | 100% | 85% |
-| Routing time (median) | 0.38 s | 0.66 s |
-| Routing cost per 1,000 messages | ~$0.02 | ~$0.07 |
-| Models more accurate and faster with Jev | **11 of 11** (cheaper for 10; equal cost for gpt-oss-120b) | |
+| Topic labels correct (40 runs have an expected topic) | 40/40 | 34/40 |
+| Answer checks passed (every check except the topic label) | 51/52 | 50/52 |
+| Routing time, median / p90 | 0.38 s / 1.3 s | 0.66 s / 0.8 s |
+| Routing cost | Jev: unmeasured (recorded $0 on all 39 Jev-routed turns, on free credits); 13 fallback calls: $0.00089 | $0.0038 (52 calls) |
+| Cost per turn (answer + routing) | $0.000997 | $0.000836 |
 
-Full grid: `evals/results/full-grid.md`. How it was measured, including two invalid runs and
-why they were thrown out: `build-process.md`, Phase 6.
+- 6 of the 8 misses without Jev are wrong labels on replies that passed every other check.
+- The p90 is worse with Jev because 13 of 52 turns fell back to the chat model after trying
+  Jev (11 on HTTP 429, 2 unsure).
+- Cost per turn is higher with Jev because of the answer model's bill, not routing. The same
+  case with the same input tokens was billed about $0.0014 in some runs and $0.0005 in others,
+  likely prompt caching (the result files don't record cache hits). 31 of 52 turns with Jev
+  were billed at the higher level, vs 17 of 52 without.
+- 11-model grid (`evals/results/full-grid.md`): the with-Jev arm replays one recorded set of
+  routes, so every model gets the same topic score by construction (that recording scored
+  100%). On answer checks, Jev was better for 7 models, tied for 3, and worse for 1
+  (gpt-4o-mini: 4 vs 2 failures).
+
+How it was measured, including two invalid runs and why they were thrown out:
+`build-process.md`, Phase 6 (its Jev figures are superseded by the last entry, 09-25).
 
 ## Limits and next steps
+- Not an equal test: the fallback classifier gets only the topic names (`app/router.py:92`);
+  Jev gets their definitions (`app/router.py:47`). Next: give both the definitions and rerun.
 - Rate limits: production needs a higher AI Gateway tier; alert when the fallback rate rises.
 - The 10 topic definitions are hand-written. The next step is to tune them against labeled
   real questions from `chat_turns`.

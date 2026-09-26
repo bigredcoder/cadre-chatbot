@@ -2,6 +2,7 @@
 
 Same 26 cases, critical ×3 (52 runs). *With Jev* = identical recorded Jev routes. *Without Jev* = the model routes and answers. Rescored with the corrected checker.
 Cost includes routing. Speed: with-Jev runs replay routes, so add ~0.4 s for live Jev routing; without-Jev speed includes live model routing.
+Read with care (added 09-25): every model replays the same routes, so *Topic w/* is the same for all by construction (that recording scored 100%). On answer checks alone (ignoring the label), Jev was better for 7 models, tied for 3, worse for 1 (gpt-4o-mini). *$/1k w/* has no Jev cost in it: the 28 recorded Jev routes show $0 (on free credits). gpt-oss-120b's 12% *Topic w/o*: all 52 of its routes came back `services`, which is also the fallback's default for a missing or unknown topic (`app/router.py:112`).
 
 | Model | Correct w/ Jev | Correct w/o | Critical w/ | Critical w/o | Topic w/ | Topic w/o | Speed w/ (+0.4 s) | Speed w/o | $/1k w/ | $/1k w/o |
 |---|---|---|---|---|---|---|---|---|---|---|

@@ -40,8 +40,9 @@ Details: `docs/jev-routing.md` (routing), `db/schema.sql` (data), `plan.md` (dec
 ## Evidence behind the choices
 - **Model:** 11 models, same 26 test cases, identical routing. Three scored 52/52;
   gemini-2.5-flash was the fastest of them. See `plan.md` §5 and `evals/results/full-grid.md`.
-- **Jev:** with vs. without Jev, for all 11 models: Jev made every model more accurate and
-  faster, and cheaper for 10 of 11 (equal for one). For gemini-2.5-flash: 52 vs 44 correct.
+- **Jev:** gemini-2.5-flash with vs. without Jev: topic labels 40/40 vs 34/40, median routing
+  0.38 s vs 0.66 s. Answers about the same (51 vs 50 of 52); p90 routing worse (1.3 s vs
+  0.8 s); Jev's cost unmeasured (recorded $0 on free credits). Limits: `docs/jev-routing.md`.
 - **Research:** design changes traced to a 2026 chatbot research review:
   `docs/research/findings.md`.
 - **Failures shown, not summarized:** every eval failure has the real reply in
@@ -83,5 +84,5 @@ With Claude Code, one phase at a time, with each commit reviewed and approved.
 - `.claude/hooks/pre_commit_gate.py`: blocks any commit if lint, the type check, or unit tests fail.
 
 ## Running costs
-About **$10/month** fixed (Supabase) plus about **$0.001 per answer** (model + Jev); hosting
-is on Vercel's free plan. Breakdown: `plan.md` §5a.
+About **$10/month** fixed (Supabase) plus about **$0.001 per answer** (answer model; Jev's
+cost unmeasured); hosting is on Vercel's free plan. Breakdown: `plan.md` §5a.

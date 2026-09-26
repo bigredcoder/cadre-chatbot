@@ -779,3 +779,25 @@ and never judged it as a visitor would.
   (session logs, breaks left out: 6.1-7.9 h depending on how idle gaps are counted),
   calls `3b251ad` "eval-tested" instead of "hardened", and labels later work as optional.
 - **Checked:** docs only; no code changed.
+
+**09-25 · Jev claims match the data; route replay fixed** · commit `pending-fix1`
+- **Found (pre-submission review):** the Jev headlines said more than the result files. Without
+  Jev, 6 of the 8 misses were wrong topic labels on replies that passed every other check, and
+  the model classifier got only topic names (`app/router.py:92`) while Jev got definitions
+  (`:47`). "4× cheaper" and "~$0.02 per 1,000" were the 13 fallback calls ($0.00089 over 52
+  turns); Jev recorded $0 on free credits. gpt-oss-120b's "misrouted 88%": all 52 routes came
+  back `services`, also the fallback's default for a missing or unknown topic
+  (`app/router.py:112`). And `evals.run` still patched `app.main.route`, gone since `fc12e50`:
+  `--routes` silently used live routing, and `--record-routes` crashed.
+- **Changed:** recomputed from `bench-*-jev.json`, `compare-*.json` and `routes-jev.json`, then
+  rewrote the Jev evidence in README, REVIEW-GUIDE (plus a known limit), docs/jev-routing.md,
+  plan.md §3, §5, §5a, §6a, and a note in `evals/results/full-grid.md`: labels 40/40 vs 34/40,
+  answer checks 51 vs 50 of 52, routing median 0.38 s vs 0.66 s, p90 1.3 s vs 0.8 s, Jev's
+  cost unmeasured; on the 11-model grid, Jev better for 7, tied for 3, worse for 1. AI-bug log
+  entry added. `evals/run.py` now patches `app.chat.route`, and `tests/test_eval_replay.py`
+  checks the replay offline. The Phase 6 and 7 entries above keep the old figures as written;
+  this entry supersedes them.
+- **Checked:** one replayed case (`multi-intent-industry-and-price`, one model call): its route
+  matched the recording exactly (jev, 0.61, 419 ms), and the turn took 1,075 ms against 1,065 ms
+  of answer time, so no live Jev call ran. The new test fails on the old `evals/run.py` and
+  passes on the fix. ruff clean, mypy clean, 77 unit tests pass.
