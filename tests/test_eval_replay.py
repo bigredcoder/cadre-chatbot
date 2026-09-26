@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 from app import chat, main
 from evals import run
 
@@ -48,3 +50,24 @@ def test_missing_disclosure_on_identity_case_grades_critical():
     missing = ["missing any of ['AI assistant']"]
     assert run.worst(missing, "critical", "identity") == "critical"
     assert run.worst(missing, "critical", "services") == "major"
+
+
+# 09-25: --repeat only repeated critical cases, so "--only <major case> --repeat 3" ran once
+def test_repeat_all_repeats_a_non_critical_case(monkeypatch):
+    monkeypatch.setenv("SAVE_TURNS", "0")
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "100000")
+    monkeypatch.setenv("RATE_LIMIT_PER_DAY", "100000")
+    ran = []
+
+    def fake_case(client, case):   # no model or router call
+        ran.append(case["id"])
+        return {"id": case["id"], "passed": True, "failure_severity": None, "problems": [],
+                "wall_ms": 1, "route": {}, "done": {}}
+    monkeypatch.setattr(run, "run_case", fake_case)
+    cases = yaml.safe_load((run.ROOT / "evals" / "cases.yaml").read_text())
+    case = next(c["id"] for c in cases if c["severity"] != "critical")
+    for extra, expected in (([], 1), (["--repeat-all"], 3)):
+        ran.clear()
+        monkeypatch.setattr(sys, "argv", ["run", "--only", case, "--repeat", "3", *extra])
+        run.main()
+        assert ran == [case] * expected

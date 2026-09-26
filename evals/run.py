@@ -5,6 +5,7 @@ Usage:
   .venv/bin/python -m evals.run --model openai/gpt-4.1-nano --out evals/results/x.json
   .venv/bin/python -m evals.run --no-jev                # benchmark: model-only routing
   .venv/bin/python -m evals.run --repeat 3              # critical cases run 3x
+  .venv/bin/python -m evals.run --repeat 3 --repeat-all # every case runs 3x
   .venv/bin/python -m evals.run --only portal-where-is-it,gap-soc2-certification
   .venv/bin/python -m evals.run --record-routes r.json  # save each case's routing
   .venv/bin/python -m evals.run --routes r.json         # replay saved routing
@@ -139,6 +140,8 @@ def main() -> int:
     ap.add_argument("--model")
     ap.add_argument("--no-jev", action="store_true")
     ap.add_argument("--repeat", type=int, default=1, help="runs per critical case")
+    ap.add_argument("--repeat-all", action="store_true",
+                    help="apply --repeat to every case, not only critical ones")
     ap.add_argument("--only", help="comma-separated case ids")
     ap.add_argument("--out")
     ap.add_argument("--record-routes", help="save each case's routing decision to this file")
@@ -185,7 +188,7 @@ def main() -> int:
 
     results = []
     for case in cases:
-        runs = args.repeat if case["severity"] == "critical" else 1
+        runs = args.repeat if case["severity"] == "critical" or args.repeat_all else 1
         for n in range(runs):
             r = run_case(client, case)
             r["run"] = n + 1

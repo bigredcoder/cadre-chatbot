@@ -1,0 +1,299 @@
+{
+  "summary": {
+    "model": "google/gemini-2.5-flash",
+    "router_mode": "jev",
+    "cases": 3,
+    "runs": 9,
+    "passed": 9,
+    "critical_failures": 0,
+    "major_failures": 0,
+    "topic_accuracy": 1.0,
+    "handoff_accuracy": 1.0,
+    "median_ms": 1259,
+    "p90_ms": 1614,
+    "median_route_ms": 337,
+    "avg_cost_per_turn_usd": 0.000573,
+    "total_cost_usd": 0.00516
+  },
+  "results": [
+    {
+      "id": "person-can-someone-call-me",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 2183,
+      "route": {
+        "topic": "booking",
+        "confidence": 0.97,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 1006,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 1164,
+        "input_tokens": 4470,
+        "output_tokens": 36,
+        "cost_usd": 0.001431,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 1
+    },
+    {
+      "id": "person-can-someone-call-me",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1272,
+      "route": {
+        "topic": "booking",
+        "confidence": 0.97,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 391,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 876,
+        "input_tokens": 4470,
+        "output_tokens": 36,
+        "cost_usd": 0.00032859,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 2
+    },
+    {
+      "id": "person-can-someone-call-me",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1614,
+      "route": {
+        "topic": "booking",
+        "confidence": 0.97,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 358,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 1251,
+        "input_tokens": 4470,
+        "output_tokens": 36,
+        "cost_usd": 0.00032859,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 3
+    },
+    {
+      "id": "person-shares-contact-details",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1197,
+      "route": {
+        "topic": "booking",
+        "confidence": 1.0,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 309,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 883,
+        "input_tokens": 4487,
+        "output_tokens": 36,
+        "cost_usd": 0.0014361,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 1
+    },
+    {
+      "id": "person-shares-contact-details",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1259,
+      "route": {
+        "topic": "booking",
+        "confidence": 1.0,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 317,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 936,
+        "input_tokens": 4487,
+        "output_tokens": 36,
+        "cost_usd": 0.00033369,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 2
+    },
+    {
+      "id": "person-shares-contact-details",
+      "severity": "major",
+      "category": "human_request",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1088,
+      "route": {
+        "topic": "booking",
+        "confidence": 0.99,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 320,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 763,
+        "input_tokens": 4487,
+        "output_tokens": 36,
+        "cost_usd": 0.00033369,
+        "model_handoff": true
+      },
+      "reply": "Happy to connect you with a strategist. Fill in the form below to reach the Cadre team, or email hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 3
+    },
+    {
+      "id": "booking-talk-to-strategist",
+      "severity": "major",
+      "category": "booking",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1172,
+      "route": {
+        "topic": "booking",
+        "confidence": 1.0,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 288,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 880,
+        "input_tokens": 4476,
+        "output_tokens": 33,
+        "cost_usd": 0.00032289,
+        "model_handoff": true
+      },
+      "reply": "You can book a call with an AI strategist by filling out the form below, or by emailing hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 1
+    },
+    {
+      "id": "booking-talk-to-strategist",
+      "severity": "major",
+      "category": "booking",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1160,
+      "route": {
+        "topic": "booking",
+        "confidence": 1.0,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 337,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 819,
+        "input_tokens": 4476,
+        "output_tokens": 33,
+        "cost_usd": 0.00032289,
+        "model_handoff": true
+      },
+      "reply": "You can book a call with an AI strategist by filling out the form below, or by emailing hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 2
+    },
+    {
+      "id": "booking-talk-to-strategist",
+      "severity": "major",
+      "category": "booking",
+      "passed": true,
+      "failure_severity": null,
+      "problems": [],
+      "wall_ms": 1464,
+      "route": {
+        "topic": "booking",
+        "confidence": 1.0,
+        "router": "jev",
+        "asks_for_human": true,
+        "handoff": true,
+        "note": "",
+        "route_ms": 404,
+        "route_cost_usd": 0.0
+      },
+      "done": {
+        "handoff": true,
+        "model": "google/gemini-2.5-flash",
+        "latency_ms": 1055,
+        "input_tokens": 4476,
+        "output_tokens": 33,
+        "cost_usd": 0.00032289,
+        "model_handoff": true
+      },
+      "reply": "You can book a call with an AI strategist by filling out the form below, or by emailing hello@gocadre.ai.\n",
+      "judge": "auto",
+      "run": 3
+    }
+  ]
+}

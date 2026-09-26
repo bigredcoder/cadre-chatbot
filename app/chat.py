@@ -38,8 +38,15 @@ OFFERS_A_PERSON = re.compile(r"(connect|put) you (with|in touch)|talk (to|with) 
 # (Brian, 09-24: "How do I book a call?" said "look for the button on our website" while the
 # form was right there). Mirrors the widget's rule in public/index.html: explicit request or
 # booking → the form; any other rule handoff → a "Talk to a strategist" button.
-SCREEN_FORM = ("A contact form to reach a strategist (name, email, subject, message). Tell them "
-               "to fill in the form below. Also mention hello@gocadre.ai or cadre.ai/contact.")
+# Pre-submission review 09-25: the reply became "the contact form on Cadre's website at
+# cadre.ai/contact". This hint asked for cadre.ai/contact, and knowledge/cadre.md lists the
+# same four fields for that page. Now it names the chat form and rules out that page.
+# The prompt's handoff rule (prompts/system.md:50) still names cadre.ai/contact; in the 3
+# booking evals the model followed this hint instead in 12/12 runs (09-25).
+SCREEN_FORM = ("A contact form to reach a strategist (name, email, subject, message), right under "
+               "your reply in this chat. Tell them to fill in the form below. It is not the form "
+               "on cadre.ai/contact: don't send them to cadre.ai/contact or Cadre's website to "
+               "book. You may also mention hello@gocadre.ai.")
 SCREEN_OFFER = "A \"Talk to a strategist\" button that opens a short contact form."
 
 

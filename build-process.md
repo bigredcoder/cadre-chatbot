@@ -633,7 +633,10 @@ and never judged it as a visitor would.
 - **Fix:** the server now tells the model what the widget will show under its reply: the form,
   a "Talk to a strategist" button, or nothing (`app/chat.py` → `{{SCREEN}}` in the prompt).
   Now: "You can book a call… by filling out the form below. You can also reach Cadre directly
-  at hello@gocadre.ai or cadre.ai/contact."
+  at hello@gocadre.ai or cadre.ai/contact." (corrected 09-25: this commit's own eval run,
+  `screen-hint.json`, said "by visiting cadre.ai/contact or by filling out the form below". From
+  `e95b80b` the reply dropped the form below; the eval didn't catch it. The 09-25 check also
+  fails this quote, on cadre.ai/contact.)
 - **Checked:** 62 unit, 10 browser (local), evals 26/26, topic and handoff accuracy 100%.
 
 **09-24 · Landing page: removed the "not the official Cadre site" line (Brian's call)** · commit `6e7bbd7`
@@ -745,6 +748,8 @@ and never judged it as a visitor would.
   removed before saving; the example improves the tone.) New eval case.
 - `evals/compare.py` no longer hard-codes "26 cases".
 - **Checked:** evals 28/28 (topic and handoff 100%), 73 unit tests; test counts refreshed.
+  (corrected 09-25: the booking reply no longer pointed to the form below; the old check
+  passed it.)
 
 **09-25 · Audit: `.claude/` and `evals/`** · commit `b7cc5e0`
 - **Commit gate proven both ways:** with a planted lint error the hook blocked the commit (exit
@@ -777,6 +782,8 @@ and never judged it as a visitor would.
   cleaner switched off, Gemini also ignored the hidden text. The cleaner is defense in depth for
   other models, and it keeps null bytes (which Postgres rejects in text) out of the database.
 - **Checked:** ruff, mypy, 76 unit tests, evals 28/28 on the full set plus the new case 3/3.
+  (corrected 09-25: the 28/28 includes the same booking reply, and that 3/3 has no results file.
+  The case passed 3/3 in `full-set-09-25.json`.)
 
 **09-25 · Review guide states working time** · commit `pending-time`
 - **Found (outside audit):** the review guide gave only commit times, so the 09-23 → 09-25
@@ -859,3 +866,33 @@ and never judged it as a visitor would.
   the canned reply 3/3 (0.94, 0.91, 0.93); "Are you a bot?" 1/3 (0.90; 0.86 and 0.85 went to the
   model); the real-person case went to the model 3/3 (0.70-0.74). ruff clean, mypy clean, 116
   unit tests pass.
+
+**09-25 · Booking answer points to the form on screen; booking evals tightened** · commit `pending-fix4`
+- **Found (pre-submission review, live probes):** "How do I book a call with an AI strategist?"
+  got "…filling out the contact form on Cadre's website at cadre.ai/contact, or by emailing
+  hello@gocadre.ai." twice, with the form right below it. First seen in `content-audit.json`
+  (`e95b80b`), though that commit didn't change `SCREEN_FORM`. The hint and the prompt's handoff
+  rule (`prompts/system.md:50`) both asked the model to mention cadre.ai/contact, and
+  `knowledge/cadre.md:94` lists the same four fields for that page. The booking eval passed any
+  reply naming hello@gocadre.ai or cadre.ai/contact. `--repeat` only repeated critical cases, and
+  the 3 booking cases are major.
+- **Changed:** `SCREEN_FORM` (`app/chat.py`) says the form is right under the reply in this chat,
+  not the one on cadre.ai/contact, and allows hello@gocadre.ai. Prompt unchanged: its handoff rule
+  still names cadre.ai/contact; the model followed the hint in all 12 booking-case runs below.
+  `booking-talk-to-strategist`, `person-can-someone-call-me` and `person-shares-contact-details`
+  now need "form below" (or "form right/just below") and fail on "on Cadre's website" or
+  "cadre.ai/contact". Not tightened: `gap-repeat-miss-response-time` (routed to the form 3/3 in
+  the full set; run 1 didn't mention it) and `gap-portal-login-help`. Not every run of either
+  routes to the form, so a "form below" check would fail the rest. `evals/run.py --repeat-all`
+  repeats every case, with a test. The 09-24, `e95b80b` and `1af30e9` entries corrected; AI-bug
+  log entry added. 117 unit tests in README, REVIEW-GUIDE and plan.md; REVIEW-GUIDE cites the
+  new full-set run; 2 rows and a note in `evals/README.md`.
+- **Checked:** offline, the new checks fail the saved booking reply in `content-audit.json` and
+  `input-cleaning.json`. They also fail both older booking cases in the 4 runs from `212d923` to
+  `4accbb1` (screen-hint, deadline-fix, chat-audit, answer-audit), which named cadre.ai/contact
+  next to the form below. `evals.run` on the 3 booking cases, 3× each, dev key
+  (`evals/results/booking-fix.json`, $0.00516): 9/9, all routed by Jev to booking, which shows
+  the form; every reply says "the form below" plus hello@gocadre.ai. Full set, critical cases 3×
+  (`evals/results/full-set-09-25.json`, $0.05214): 31/31 cases, 63/63 runs, topic and handoff
+  accuracy 1.0. Jev routed 50 runs; the fallback routed 13 (Jev HTTP 429 or 503 on 9, under 0.6
+  on 4). ruff clean, mypy clean, 117 unit tests pass.

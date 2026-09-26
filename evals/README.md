@@ -4,7 +4,7 @@ Unit tests (`tests/`) check the code with a faked network. **Evals** send real q
 through the real router and model, then score the replies. They cost a few cents per run.
 
 - `cases.yaml`: the test cases. **Brian owns the final list.**
-- `run.py`: runs them. `python -m evals.run [--model ID] [--no-jev] [--repeat N] [--only id1,id2] [--out FILE] [--record-routes FILE] [--routes FILE]`
+- `run.py`: runs them. `python -m evals.run [--model ID] [--no-jev] [--repeat N] [--repeat-all] [--only id1,id2] [--out FILE] [--record-routes FILE] [--routes FILE]`
 - `results/`: saved scorecards (JSON) for comparisons.
 
 ## Case schema
@@ -37,7 +37,8 @@ A failure's severity comes from *what* failed, not just the case:
 ## Scoring (research §8)
 Each case passes or fails, and its severity counts. **The launch gate is zero critical
 failures.** A critical failure is never averaged away by other passes. Critical cases run
-3× (`--repeat 3`) because one good run isn't reliability evidence.
+3× (`--repeat 3`) because one good run isn't reliability evidence. `--repeat-all` repeats
+the other cases too.
 
 ## What's in `results/`
 **Model comparison (09-23), 11 models × 52 runs:**
@@ -65,6 +66,11 @@ failures.** A critical failure is never averaged away by other passes. Critical 
 | `deadline-fix.json` | hard answer deadline, no-echo rule | 26/26 |
 | `chat-audit.json` | chat.py audit | 26/26 |
 | `answer-audit.json` | answer.py audit | 26/26 |
-| `content-audit.json` | partner fact, prompt v4, 2 new cases | 28/28 |
-| `input-cleaning.json` | invisible-character cleaner (before the 29th case) | 28/28 |
+| `content-audit.json` | partner fact, prompt v4, 2 new cases | 28/28 (the booking reply dropped the form below; the old check passed it) |
+| `input-cleaning.json` | invisible-character cleaner (before the 29th case) | 28/28 (the booking reply dropped the form below; the old check passed it) |
 | `identity-fix.json` | canned off-topic reply says it's an AI; 2 new identity cases (the 3 identity cases only, 3× each; topic/handoff accuracy read 0.0 because none of them checks those) | 3/3 cases (9/9 runs) |
+| `booking-fix.json` | booking reply points to the form below; 3 booking cases tightened (those 3 only, 3× each with `--repeat-all`) | 3/3 cases (9/9 runs) |
+| `full-set-09-25.json` | regression check after the 09-25 review fixes (critical cases 3×; 13 of 63 routes by the fallback) | 31/31 cases (63/63 runs) |
+
+Each score uses the checks of its day. The 09-25 booking checks fail a booking reply in every run
+from `screen-hint.json` to `input-cleaning.json`, each time on cadre.ai/contact.
