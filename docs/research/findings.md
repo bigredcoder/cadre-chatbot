@@ -53,12 +53,3 @@ industry fit, pillars, portal login, security certification, "are you human?").
 **Not applicable, with reason:** 4–5, 7, 14–16, 21–25, 29. Cadence has no accounts, orders,
 bookings, inventory, or localization. The report itself says to use N/A rather than
 inflate scores.
-
-## Talking points for the review
-- "Research on website chatbots in 2026 says the biggest failure is visitors not knowing
-  what the bot is for, so the launcher says what it does, and the bot has one job."
-- "Model confidence isn't calibrated correctness. I measured Jev, found its 'needs a human'
-  score unreliable, and moved handoff to explicit rules. The research says the same."
-- "I measure qualified handoffs, not lead count. The research is clear that form
-  completions aren't the outcome."
-- "Zero critical failures is the gate. I don't average a hallucinated price away with good tone scores."

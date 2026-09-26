@@ -589,8 +589,8 @@ and never judged it as a visitor would.
   name models, so arguably right). Unit 53/53 (3 new), browser 9/9 incl. a new source-link check.
 
 **09-24 · Fixes from a skeptical pre-submission audit, plus header icons** · commit `fc12e50`
-- **Did:** audited the repo the way Cadre's reviewers will: git history and secrets, docs vs
-  code, the live bot (21 real questions including injection and personal data), and code quality.
+- **Did:** audited the repo: git history and secrets, docs vs code, the live bot (21 real
+  questions including injection and personal data), and code quality.
 - **Fixed:**
   - One kind of source link ("cadre.ai/foo-") threw an error and froze the chat input.
     The renderer no longer throws, and the input is always released.
@@ -608,7 +608,7 @@ and never judged it as a visitor would.
   (talk to a strategist), with hover tooltips and screen-reader names.
 - **Checked:** unit 58/58, browser 9/9 (local), evals 26/26 with topic and handoff accuracy 100%.
 
-**09-24 · Toward 90: provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit `899d1b4`
+**09-24 · Provider privacy, shared rate limit, reviewer guide, a real /ship run** · commit `899d1b4`
 - **Personal details never reach the model providers:** emails, phones, and card numbers are now
   redacted before routing and answering, not just before saving (`app/chat.py`).
 - **Shared rate limit:** Vercel firewall rule, 20 POSTs/min per IP on `/api/`, across all
@@ -928,3 +928,14 @@ and never judged it as a visitor would.
   the new log entry. ruff clean, mypy clean, 117 unit tests pass. No code behavior changed. (With
   `SAVE_TURNS=0` set in the shell, 2 tests in `tests/test_transcripts.py` fail, at HEAD too: they
   don't set it themselves.)
+
+**09-26 · findings.md trimmed to findings; two log lines made plain** · commit "Remove review talking points and hiring-process text from the docs"
+- **Found:** `docs/research/findings.md` ended with four prepared quotes that weren't findings.
+  Two 09-24 lines in this log weren't plain records of the work: the `899d1b4` heading and the
+  first line of the `fc12e50` entry.
+- **Changed:** deleted the quotes section; the `899d1b4` heading now names only the changes; the
+  `fc12e50` line now lists only what was audited.
+- **Checked:** `git grep -nIiE` over tracked text files (except `evals/results/*.json`) for the
+  removed wording, private names and local paths: 4 lines left, all kept. Two are in the research
+  report, one is a recorded bot reply in `evals/results/compare-fixed-failures.md`, and one is
+  this entry's heading, which names the commit. ruff clean, mypy clean, 117 unit tests pass.
