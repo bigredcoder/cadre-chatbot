@@ -383,7 +383,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 **Benchmark: with vs. without Jev (Brian's task), same model, same 26 cases**
 - **With Jev: 51/52, 0 critical, topic 100%, routing 0.38 s, $0.000017 per route.**
-- Without Jev: 44/52, **7 critical**, topic 85%, routing 0.66 s, $0.000072 per route.
+- Without Jev: 44/52, **7 critical**, topic 85%, routing 0.66 s, $0.000072 per route. *(superseded 09-25: see "Jev claims match the data" at the end)*
 - Without Jev, the chat model routed "Are you SOC 2 certified?" to `company` 3/3 times, so the
   handoff never fired; Jev got it right every time.
 - Caveat: Jev returned HTTP 429 on 11 of 52 calls even sequentially; the fallback covered
@@ -404,12 +404,12 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 - **Corrected results:** three models perfect (gemini-2.5-flash 1.0 s, gpt-4.1-mini 1.3 s,
   claude-haiku-4.5 2.0 s). The only real critical failure: llama-4-maverick printed its full
   system prompt 3/3. Jev vs no Jev: 51 vs 44 passes, topic labels 100% vs 85%, routing
-  0.38 s vs 0.66 s, 4× cheaper routing; no critical failures either way.
+  0.38 s vs 0.66 s, 4× cheaper routing; no critical failures either way. *(superseded 09-25: see "Jev claims match the data" at the end)*
 - New CLAUDE.md rule: never report an eval failure without its real example.
 
 **Decision: keep Jev; plan for its usage tier (Brian, 09-23)**
 - Jev (released 2026-09-15) stays. The evidence: better routing (100% vs 85% topic labels,
-  51 vs 44 passes), faster (0.38 s vs 0.66 s), 4× cheaper per routing decision.
+  51 vs 44 passes), faster (0.38 s vs 0.66 s), 4× cheaper per routing decision. *(superseded 09-25: see "Jev claims match the data" at the end)*
 - Usage tier: rate limits hit ~20% of calls in testing. The fallback (one retry → chat-model
   routing) already covers it: 11/11 rate-limited calls were answered normally. Production
   note: move to a higher tier and alert on the fallback rate. Tracked in `plan.md` §7.
@@ -420,13 +420,13 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
 
 **Running costs added (Brian, 09-23): `plan.md` §5a**
 - Hosting (Vercel Hobby) $0; database (Supabase) $10/month; answers ~$0.91 per 1,000;
-  Jev routing ~$0.02 per 1,000 (free credits so far); build and testing spend so far **$2.46**.
+  Jev routing ~$0.02 per 1,000 (free credits so far); build and testing spend so far **$2.46**. *(superseded 09-25: see "Jev claims match the data" at the end)*
 - Note: I had estimated the model comparisons at "under $1". Actual testing spend is $2.46
   because the two invalid runs had to be redone and Claude Haiku costs about 5× more per answer.
 
 **Full grid: all 11 models with and without Jev (Brian's request)**
 - `evals/results/full-grid.md`; failure examples in `compare-nojev-failures.md`.
-- **Jev improved accuracy and speed for all 11 models (cost: lower for 10, equal for 1).** gemini-2.5-flash: 52 vs 44
+- **Jev improved accuracy and speed for all 11 models (cost: lower for 10, equal for 1).** gemini-2.5-flash: 52 vs 44 *(superseded 09-25: see "Jev claims match the data" at the end)*
   correct, 1.4 s vs 1.6 s (including Jev's routing time), $0.91 vs $1.04 per 1,000.
 - Real critical examples without Jev: gpt-4.1-nano invented `linkedin.com/company/gocadre`;
   gemini-2.5-flash returned one empty reply (the visitor saw the friendly fallback).
@@ -452,7 +452,7 @@ the link with no handoff; "Are you SOC 2 certified?" admits the gap and hands of
   re-capped after redaction.
 - **Docs:** `README.md`, `docs/jev-routing.md` (Brian's task), and an expanded "what's next".
   Two of my own claims were corrected before they shipped: "28 routes ≥0.72" (actual lowest
-  0.61) and "Jev made every model cheaper" (true for 10 of 11; equal for gpt-oss-120b).
+  0.61) and "Jev made every model cheaper" (true for 10 of 11; equal for gpt-oss-120b). *(superseded 09-25: see "Jev claims match the data" at the end)*
 - **Browser tests:** `e2e/test_widget.py`: 6 Playwright tests (open + focus + AI disclosure,
   a real streamed answer, the pricing form with validation and double-submit, keyboard only,
   phone size, privacy page). **6/6 pass locally** against the fixed code.
@@ -785,7 +785,7 @@ and never judged it as a visitor would.
   (corrected 09-25: the 28/28 includes the same booking reply, and that 3/3 has no results file.
   The case passed 3/3 in `full-set-09-25.json`.)
 
-**09-25 · Review guide states working time** · commit `pending-time`
+**09-25 · Review guide states working time** · commit `dd07a6e`
 - **Found (outside audit):** the review guide gave only commit times, so the 09-23 → 09-25
   span read as 52 hours of work, and it called the 15:23 version "hardened" when later
   audits still fixed privacy and error-handling gaps in it.
@@ -794,7 +794,7 @@ and never judged it as a visitor would.
   calls `3b251ad` "eval-tested" instead of "hardened", and labels later work as optional.
 - **Checked:** docs only; no code changed.
 
-**09-25 · Jev claims match the data; route replay fixed** · commit `pending-fix1`
+**09-25 · Jev claims match the data; route replay fixed** · commit `33eb401`
 - **Found (pre-submission review):** the Jev headlines said more than the result files. Without
   Jev, 6 of the 8 misses were wrong topic labels on replies that passed every other check, and
   the model classifier got only topic names (`app/router.py:92`) while Jev got definitions
@@ -816,7 +816,7 @@ and never judged it as a visitor would.
   of answer time, so no live Jev call ran. The new test fails on the old `evals/run.py` and
   passes on the fix. ruff clean, mypy clean, 77 unit tests pass.
 
-**09-25 · Tooling claims match the session logs; commit gate hardened** · commit `pending-fix2`
+**09-25 · Tooling claims match the session logs; commit gate fails closed** · commit `98ccd7c`
 - **Found (pre-submission review, from the session logs):** the build session was started in the
   parent folder, where this repo's hook doesn't load. No hook events in 572 Bash calls, so the hook
   never blocked a real commit. 8 subagent spawns in the build session, all general-purpose; Brian's
@@ -840,13 +840,13 @@ and never judged it as a visitor would.
   payload piped in by hand is blocked (exit 2, with the ruff error). ruff clean, mypy clean, 112
   unit tests pass.
 
-**09-25 · Canned off-topic reply says it's an AI; identity evals added** · commit `pending-fix3`
+**09-25 · Canned off-topic reply says it's an AI; identity evals added** · commit `151e99a`
 - **Found (pre-submission review, live probe on the deployed site):** Jev routed "Are you a
   human?" to off_topic at 0.93, over the 0.9 canned threshold (`app/config.py:61`), so
   `app/chat.py` skipped the model and sent `OFF_TOPIC_REPLY`. It never said it was an AI
   (CLAUDE.md rule 3), and it promised "connect you with a strategist" with no button (against
   `app/chat.py:32`). The identity eval asks "Am I talking to a real person right now?", which Jev
-  scored 0.69-0.83 in every saved Jev-routed run, so it never reached that reply. `evals/run.py`
+  scored 0.69-0.87 in every saved Jev-routed run (all under 0.9), so it never reached that reply. `evals/run.py`
   also graded a missing disclosure as major.
 - **Changed:** `OFF_TOPIC_REPLY` now opens "I'm Cadence, Cadre's AI assistant, so I can only help
   with questions about Cadre AI." and offers no strategist. The other canned messages (`FALLBACK`
@@ -867,7 +867,7 @@ and never judged it as a visitor would.
   model); the real-person case went to the model 3/3 (0.70-0.74). ruff clean, mypy clean, 116
   unit tests pass.
 
-**09-25 · Booking answer points to the form on screen; booking evals tightened** · commit `pending-fix4`
+**09-25 · Booking answer points to the form on screen; booking evals tightened** · commit `e43f076`
 - **Found (pre-submission review, live probes):** "How do I book a call with an AI strategist?"
   got "…filling out the contact form on Cadre's website at cadre.ai/contact, or by emailing
   hello@gocadre.ai." twice, with the form right below it. First seen in `content-audit.json`
