@@ -52,6 +52,23 @@ def test_save_failure_never_raises(monkeypatch):
                                               "user_message": "hi", "outcome": "answered"})) is False
 
 
+def test_save_selects_demo_schema_and_requests_no_row_readback(monkeypatch):
+    monkeypatch.setattr(transcripts.config, "SUPABASE_SCHEMA", "cadre_chatbot")
+    monkeypatch.setattr(transcripts.config, "SUPABASE_URL", "https://demo.example.invalid")
+    monkeypatch.setattr(transcripts.config, "SAVE_TURNS", True)
+
+    def handler(request):
+        assert str(request.url) == "https://demo.example.invalid/rest/v1/chat_turns"
+        assert request.headers["content-profile"] == "cadre_chatbot"
+        assert request.headers["prefer"] == "return=minimal"
+        return httpx.Response(201)
+
+    _with_transport(monkeypatch, handler)
+    assert asyncio.run(transcripts.save_turn({
+        "session_id": "schema-test-0001", "user_message": "Synthetic", "outcome": "answered"
+    }))
+
+
 def test_short_phone_numbers_are_removed_but_dates_kept():
     out = transcripts.redact("Call 555-0199 or 324-3223 x. Meeting 2026-09-23.")
     assert out.count("[phone removed]") == 2 and "2026-09-23" in out

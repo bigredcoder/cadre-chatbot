@@ -74,6 +74,7 @@ async def save_turn(row: dict) -> bool:
                     "apikey": config.SUPABASE_PUBLISHABLE_KEY,
                     "Authorization": f"Bearer {config.SUPABASE_PUBLISHABLE_KEY}",
                     "Prefer": "return=minimal",
+                    "Content-Profile": config.SUPABASE_SCHEMA,
                 },
             )
         if resp.status_code >= 300:

@@ -18,3 +18,5 @@ node_modules/
 .mypy_cache/
 # local-only editor/preview config (absolute paths to one machine)
 .claude/launch.json
+.vercel
+.env*

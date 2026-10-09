@@ -79,13 +79,14 @@ ROUTER_MODE = os.environ.get("ROUTER_MODE", "jev")
 # booking's answer IS the handoff form).
 HANDOFF_TOPICS = {"pricing", "booking"}
 
-# --- Conversation storage (Supabase project "cadre-chatbot") ---
+# --- Conversation storage (Supabase project "Demo Lab", cadre_chatbot schema) ---
 # The publishable key is public by design (like any website's analytics key). The table's
 # row-level security lets it INSERT only: it can't read, change, or delete anything.
 # Review conversations in the Supabase dashboard, never through the app.
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://juvxbhiwpdbxfxgtaxcg.supabase.co")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://vzjfzpqdtzyvwhfvzzbi.supabase.co")
+SUPABASE_SCHEMA = os.environ.get("SUPABASE_SCHEMA", "cadre_chatbot")
 SUPABASE_PUBLISHABLE_KEY = os.environ.get(
-    "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_ZvU8JpnOjhQqb6IlLiGlZw_6KF0nQvs"
+    "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_TZAyLSRKGEVnHNzoCI97KQ_g2p2Fyw1"
 )
 SAVE_TURNS = os.environ.get("SAVE_TURNS", "1") != "0"   # evals set 0: tests aren't visitors
 SAVE_TIMEOUT_S = 3            # a slow save can hold the input at most this long (usually < 1 s)

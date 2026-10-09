@@ -114,7 +114,9 @@ def lead(req: LeadRequest, request: Request) -> dict:
 def health() -> dict:
     """Lets us (and Vercel) confirm the app is up. Never reveals key values."""
     return {"status": "ok", "answer_model": config.ANSWER_MODEL,
-            "openrouter_key": bool(config.openrouter_key())}
+            "openrouter_key": bool(config.openrouter_key()),
+            "storage": {"enabled": config.SAVE_TURNS,
+                        "url": config.SUPABASE_URL, "schema": config.SUPABASE_SCHEMA}}
 
 
 # Local dev only. On Vercel, files in public/ are served as static files and are NOT

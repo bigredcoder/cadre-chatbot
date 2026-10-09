@@ -1073,3 +1073,13 @@ and never judged it as a visitor would.
   manufacturing companies?") answered correctly, cost $0.0014935; the dev key's OpenRouter usage
   read $3.533023593 before and 60 s after, so the answer was billed to Cadre's key. REVIEW-GUIDE
   now says which account pays for what; plan.md Phase 10 is ticked.
+
+### 10-09 · Demo Lab database test copy · uncommitted
+- **Changed in this isolated clone only:** optional SUPABASE_SCHEMA config and Content-Profile on transcript writes. Local public configuration targets Demo Lab's cadre_chatbot schema. Production checkout and deployment unchanged.
+- **Checked:** 12 transcript unit tests passed, including the schema routing header and return=minimal requirement. Actual adapter wrote one synthetic hosted record; owner-side readback confirmed email/phone redaction. Test row removed. No model calls or real user messages generated.
+- **Database:** 264 source records copied with exact batch checksums and original timestamps; INSERT-only permissions and 30-day scheduled cleanup preserved. Full receipt is ../../../evidence/verification-2026-10-09.md in the Demo Lab workspace.
+
+### 10-09 · Move live storage to Demo Lab · commit "Use Demo Lab for transcript storage"
+- **Changed:** schema-aware transcript writes and Demo Lab defaults; public storage target in health output. Vercel environment settings and main app URL now target Demo Lab. Model configuration and credentials unchanged.
+- **Checked:** ruff, mypy and 120 unit tests passed. Published health endpoint confirms destination/schema; actual adapter synthetic insert/redaction passed, and the test row was removed. No paid model calls. All 264 copied source records match checksums.
+- **Retirement:** Brian approved deleting the old Axl/Cadre databases after safe cutover on 10-09. Final deletion receipt lives in the Demo Lab workspace.
